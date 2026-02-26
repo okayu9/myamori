@@ -14,8 +14,10 @@
 ```sh
 git clone <repo-url> && cd myamori
 bun install
-cp .dev.vars.example .dev.vars  # Edit with your local credentials
+cp wrangler.toml.template wrangler.toml  # Fill in your Cloudflare resource IDs and secrets
 ```
+
+> **Note**: `wrangler.toml` is git-ignored. Each developer maintains their own copy from the template.
 
 ## Development Flow
 
@@ -24,25 +26,30 @@ This project uses [GitHub Flow](https://docs.github.com/en/get-started/using-git
 Direct pushes to `main` are prohibited. All changes go through pull requests.
 
 ```
-1. Branch        git checkout -b feat/add-discord-adapter
-                 ↓
-2. Propose       /opsx:propose "Add Discord webhook adapter"
-                 → generates proposal.md, design.md, tasks.md
-                 ↓
-3. Implement     /opsx:apply
-                 → write code and tests following tasks.md
-                 ↓
-4. Push & PR     git push -u origin feat/add-discord-adapter
-                 gh pr create
-                 ↓
-5. CI            Biome lint + tsc type check + Vitest (automatic)
-                 ↓
-6. Review        Address feedback, push fixes
-                 ↓
-7. Merge         Squash or merge into main
-                 ↓
-8. Post-merge    CI deploys (wrangler deploy)
-                 CI runs openspec archive → creates archive PR
+ 1. Branch        git checkout -b feat/add-discord-adapter
+                  ↓
+ 2. Propose       /opsx:propose "Add Discord webhook adapter"
+                  → generates proposal.md, design.md, tasks.md
+                  ↓
+ 3. Implement     /opsx:apply
+                  → write code and tests following tasks.md
+                  ↓
+ 4. Push & PR     git push -u origin feat/add-discord-adapter
+                  gh pr create
+                  ↓
+ 5. CI            Biome lint + tsc type check + Vitest (automatic)
+                  ↓
+ 6. Review        Address feedback, push fixes
+                  ↓
+ 7. Merge         Squash or merge into main
+                  ↓
+ 8. Post-merge    CI: staging deploy + openspec archive (parallel)
+                  ↓
+ 9. Verify        Test on staging with the test Discord server
+                  ↓
+10. Production    Manually trigger production deploy via GitHub Actions
+                  ↓
+11. Release       Tag the verified commit (gh release create vX.Y.Z)
 ```
 
 ### OpenSpec Change = Branch = PR
@@ -117,6 +124,25 @@ fix: handle email parsing edge cases
 - Summarize what changed and why (keep it brief — the proposal has the details).
 - Note anything reviewers should pay attention to.
 
+## Environments
+
+Deployment uses two environments managed via [GitHub Environments](https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment). Environment-specific values (Cloudflare resource IDs, API tokens) are stored as GitHub Variables and Secrets — not in the repository.
+
+`wrangler.toml.template` contains placeholders that CI substitutes at deploy time using `envsubst`.
+
+| Environment | Deploy trigger | Purpose |
+|-------------|---------------|---------|
+| `staging` | Automatic on merge to `main` | Verify with test Discord server |
+| `production` | Manual (`workflow_dispatch`) | Live deployment |
+
+## Releases
+
+After verifying a production deploy, tag the commit and create a [GitHub Release](https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases). Tagged releases are the only commits considered stable — forks and external deployments are expected to use them, not the HEAD of `main`.
+
+```sh
+gh release create v1.0.0 --generate-notes
+```
+
 ## CI Pipeline
 
 ### PR Checks (required to pass before merge)
@@ -131,8 +157,15 @@ fix: handle email parsing edge cases
 
 | Step | Trigger | Action |
 |------|---------|--------|
-| Deploy | Every merge | `wrangler deploy` |
+| Deploy to staging | Every merge | `envsubst` + `wrangler deploy --env staging` |
 | Archive | When `openspec/changes/` has unarchived changes | `openspec archive` → PR |
+
+### Production Deploy & Release
+
+| Step | Trigger | Action |
+|------|---------|--------|
+| Deploy to production | Manual (`workflow_dispatch`) | `envsubst` + `wrangler deploy` |
+| Release tag | After production verification | `gh release create vX.Y.Z` |
 
 ## Testing
 
