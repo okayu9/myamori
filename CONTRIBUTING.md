@@ -58,7 +58,7 @@ Each OpenSpec change maps to exactly one feature branch and one pull request. Ke
 
 ### Archive After Merge
 
-After a feature PR is merged, CI automatically runs `openspec archive` and creates a PR to update specs and move the change to `changes/archive/`. If archive fails (e.g., spec conflicts), CI creates a Draft PR with a warning for manual resolution.
+After a feature PR is merged, CI automatically runs `openspec archive` and creates a PR with auto-merge enabled to update specs and move the change to `changes/archive/`. If archive fails (e.g., spec conflicts), CI creates a Draft PR with a warning for manual resolution (auto-merge does not apply to drafts).
 
 ## Branch Naming
 
@@ -158,7 +158,7 @@ gh release create v1.0.0 --generate-notes
 | Step | Trigger | Action |
 |------|---------|--------|
 | Deploy to staging | Every merge | `envsubst` + `wrangler deploy --env staging` |
-| Archive | When `openspec/changes/` has unarchived changes | `openspec archive` → PR |
+| Archive | When `openspec/changes/` has unarchived changes | `openspec archive` → PR (auto-merge) |
 
 ### Production Deploy & Release
 
