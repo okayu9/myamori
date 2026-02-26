@@ -1,0 +1,35 @@
+name = "myamori"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+
+[vars]
+DISCORD_APPLICATION_ID = "${DISCORD_APPLICATION_ID}"
+DISCORD_PUBLIC_KEY = "${DISCORD_PUBLIC_KEY}"
+
+# Secrets (set via `wrangler secret put` or GitHub Secrets in CI):
+# - DISCORD_BOT_TOKEN
+
+[[d1_databases]]
+binding = "DB"
+database_name = "${D1_DATABASE_NAME}"
+database_id = "${D1_DATABASE_ID}"
+
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "${R2_BUCKET_NAME}"
+
+[env.staging]
+name = "myamori-staging"
+
+[env.staging.vars]
+DISCORD_APPLICATION_ID = "${STAGING_DISCORD_APPLICATION_ID}"
+DISCORD_PUBLIC_KEY = "${STAGING_DISCORD_PUBLIC_KEY}"
+
+[[env.staging.d1_databases]]
+binding = "DB"
+database_name = "${STAGING_D1_DATABASE_NAME}"
+database_id = "${STAGING_D1_DATABASE_ID}"
+
+[[env.staging.r2_buckets]]
+binding = "BUCKET"
+bucket_name = "${STAGING_R2_BUCKET_NAME}"
