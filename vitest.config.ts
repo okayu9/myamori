@@ -5,6 +5,12 @@ export default defineWorkersConfig({
 		poolOptions: {
 			workers: {
 				wrangler: { configPath: "./wrangler.toml" },
+				miniflare: {
+					bindings: {
+						TELEGRAM_BOT_TOKEN: "test-bot-token",
+						TELEGRAM_WEBHOOK_SECRET: "test-webhook-secret",
+					},
+				},
 			},
 		},
 	},

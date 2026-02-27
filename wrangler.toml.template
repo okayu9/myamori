@@ -2,12 +2,9 @@ name = "myamori"
 main = "src/index.ts"
 compatibility_date = "2025-01-01"
 
-[vars]
-DISCORD_APPLICATION_ID = "${DISCORD_APPLICATION_ID}"
-DISCORD_PUBLIC_KEY = "${DISCORD_PUBLIC_KEY}"
-
 # Secrets (set via `wrangler secret put` or GitHub Secrets in CI):
-# - DISCORD_BOT_TOKEN
+# - TELEGRAM_BOT_TOKEN
+# - TELEGRAM_WEBHOOK_SECRET
 
 [[d1_databases]]
 binding = "DB"
@@ -20,10 +17,6 @@ bucket_name = "${R2_BUCKET_NAME}"
 
 [env.staging]
 name = "myamori-staging"
-
-[env.staging.vars]
-DISCORD_APPLICATION_ID = "${STAGING_DISCORD_APPLICATION_ID}"
-DISCORD_PUBLIC_KEY = "${STAGING_DISCORD_PUBLIC_KEY}"
 
 [[env.staging.d1_databases]]
 binding = "DB"
