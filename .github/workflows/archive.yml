@@ -37,12 +37,15 @@ jobs:
       - name: Run openspec archive
         if: steps.check.outputs.skip == 'false'
         id: archive
+        shell: bash
         run: |
-          changes=$(find openspec/changes -mindepth 1 -maxdepth 1 -type d ! -name archive -printf '%f\n' 2>/dev/null)
-          for name in $changes; do
-            echo "Archiving: $name"
-            npx @fission-ai/openspec@1 archive "$name" --yes 2>&1 | tee -a /tmp/archive-output.txt
-          done
+          set -o pipefail
+          find openspec/changes -mindepth 1 -maxdepth 1 -type d ! -name archive -print0 2>/dev/null \
+            | while IFS= read -r -d '' dir; do
+                name=$(basename "$dir")
+                echo "Archiving: $name"
+                npx @fission-ai/openspec@1 archive "$name" --yes 2>&1 | tee -a /tmp/archive-output.txt
+              done
           echo "success=true" >> "$GITHUB_OUTPUT"
         continue-on-error: true
 
