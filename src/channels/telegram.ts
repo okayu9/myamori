@@ -27,11 +27,12 @@ export class TelegramAdapter implements ChannelAdapter {
 
 		const msg = update.message;
 		if (!msg.from) return null;
-		if (!msg.text) return null;
+		const text = msg.text ?? msg.caption;
+		if (!text) return null;
 
 		return {
 			userId: String(msg.from.id),
-			text: msg.text,
+			text,
 			chatId: String(msg.chat.id),
 			threadId: msg.message_thread_id,
 			attachments: extractAttachments(msg),
@@ -52,11 +53,18 @@ export class TelegramAdapter implements ChannelAdapter {
 		if (threadId !== undefined) {
 			body.message_thread_id = threadId;
 		}
-		await fetch(url, {
+		const response = await fetch(url, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify(body),
 		});
+		const data: { ok: boolean; error_code?: number; description?: string } =
+			await response.json();
+		if (!data.ok) {
+			throw new Error(
+				`Telegram sendMessage failed (${data.error_code}): ${data.description}`,
+			);
+		}
 	}
 }
 

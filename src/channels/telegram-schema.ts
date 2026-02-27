@@ -30,6 +30,7 @@ const telegramMessageSchema = z.object({
 	from: telegramUserSchema.optional(),
 	chat: telegramChatSchema,
 	text: z.string().optional(),
+	caption: z.string().optional(),
 	message_thread_id: z.number().int().optional(),
 	photo: z.array(telegramPhotoSizeSchema).optional(),
 	document: telegramDocumentSchema.optional(),

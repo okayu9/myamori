@@ -80,7 +80,7 @@ describe("TelegramAdapter", () => {
 			expect(await adapter.parseMessage(req)).toBeNull();
 		});
 
-		it("returns null when text is missing", async () => {
+		it("returns null when text and caption are both missing", async () => {
 			const body = {
 				update_id: 4,
 				message: {
@@ -95,6 +95,35 @@ describe("TelegramAdapter", () => {
 				body: JSON.stringify(body),
 			});
 			expect(await adapter.parseMessage(req)).toBeNull();
+		});
+
+		it("uses caption as text for media messages", async () => {
+			const body = {
+				update_id: 7,
+				message: {
+					message_id: 105,
+					from: { id: 42, first_name: "Test" },
+					chat: { id: -1001, type: "supergroup" },
+					caption: "photo description",
+					photo: [
+						{
+							file_id: "img",
+							file_unique_id: "u1",
+							width: 800,
+							height: 600,
+						},
+					],
+				},
+			};
+			const req = new Request("http://localhost/webhook", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify(body),
+			});
+			const msg = await adapter.parseMessage(req);
+			expect(msg).not.toBeNull();
+			expect(msg?.text).toBe("photo description");
+			expect(msg?.attachments).toEqual([{ type: "photo", fileId: "img" }]);
 		});
 
 		it("returns null when from is missing", async () => {
