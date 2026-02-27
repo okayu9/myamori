@@ -39,13 +39,13 @@ Because Discord requires Interaction responses within 3 seconds and LLM calls ex
 
 1. Immediately respond with `deferReply` to acknowledge the interaction.
 2. Process the LLM call asynchronously.
-3. Send the result via `followUp` (editing the deferred reply).
+3. Send the result via `editReply` to finish the deferred response.
 
 #### Scenario: Deferred reply for LLM processing
 
 - **WHEN** a Discord interaction is received
 - **THEN** the adapter responds with `deferReply` within 3 seconds
-- **AND** sends the LLM result via `followUp` after processing completes
+- **AND** sends the LLM result via `editReply` after processing completes
 
 ### Requirement: Slash Command
 

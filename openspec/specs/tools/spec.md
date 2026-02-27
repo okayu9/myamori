@@ -215,7 +215,7 @@ The system SHALL provide a web search tool using a search API (e.g., Tavily) tha
 
 Risk level SHALL be `low`.
 
-Phase 1 SHALL NOT include full page browsing (fetching and rendering entire pages).
+Phase 1 SHALL NOT include full-page browsing (fetching and rendering entire pages).
 
 #### Scenario: Web search executed
 
@@ -223,9 +223,9 @@ Phase 1 SHALL NOT include full page browsing (fetching and rendering entire page
 - **THEN** the search API is called
 - **AND** results are returned immediately (risk: `low`)
 
-#### Scenario: No full page browsing
+#### Scenario: No full-page browsing
 
 - **WHEN** a web search is performed
 - **THEN** only search result snippets are returned
-- **AND** full page content is not fetched or rendered
+- **AND** full-page content is not fetched or rendered
 
