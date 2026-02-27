@@ -1,9 +1,5 @@
-# Architecture Specification
+## MODIFIED Requirements
 
-## Purpose
-
-Defines the overall system architecture, request flow, component structure, and Cloudflare service usage for the personal AI assistant.
-## Requirements
 ### Requirement: Request Flow
 
 The system SHALL receive all user interactions via Discord Interaction Webhooks routed to Cloudflare Workers.
@@ -141,4 +137,3 @@ The system SHALL store vector indices for long-term memory in Vectorize (Phase 3
 - **THEN** they are stored in D1
 - **WHEN** the system persists binary or large text data
 - **THEN** they are stored in R2
-

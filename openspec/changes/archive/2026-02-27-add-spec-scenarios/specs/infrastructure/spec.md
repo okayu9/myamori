@@ -1,9 +1,5 @@
-# Infrastructure Specification
+## MODIFIED Requirements
 
-## Purpose
-
-Defines the IaC strategy (OpenTofu), CI/CD pipelines (GitHub Actions), and project directory structure.
-## Requirements
 ### Requirement: OpenTofu Purpose
 
 OpenTofu SHALL be used to declaratively manage Cloudflare resource creation, making the environment reproducible with `tofu apply`.
@@ -210,4 +206,3 @@ my-assistant/
 
 - **WHEN** new OpenTofu code is added
 - **THEN** it is placed under the `infra/` directory
-

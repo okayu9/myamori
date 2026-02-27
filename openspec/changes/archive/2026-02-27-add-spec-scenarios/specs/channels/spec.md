@@ -1,9 +1,5 @@
-# Channels Specification
+## MODIFIED Requirements
 
-## Purpose
-
-Channel abstraction layer that normalizes interactions from different messaging platforms into a common format, with Discord as the Phase 1 implementation.
-## Requirements
 ### Requirement: Channel Abstraction
 
 The system SHALL define a common `IncomingMessage` type and a `ChannelAdapter` interface shared by all channel implementations.
@@ -78,4 +74,3 @@ Future channel adapters SHALL implement the same `ChannelAdapter` interface. Whe
 - **WHEN** a Slack adapter is implemented
 - **THEN** it implements the `ChannelAdapter` interface
 - **AND** uses HTTP mode instead of socket mode
-

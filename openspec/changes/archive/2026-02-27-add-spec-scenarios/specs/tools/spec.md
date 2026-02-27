@@ -1,9 +1,5 @@
-# Tools Specification
+## MODIFIED Requirements
 
-## Purpose
-
-Defines the tool framework and each tool's behavior, inputs, outputs, and risk levels. Tools allow the assistant to interact with external services and storage.
-## Requirements
 ### Requirement: Tool Definition
 
 Every tool SHALL be defined with a Zod schema for input/output validation and an explicit risk level.
@@ -228,4 +224,3 @@ Phase 1 SHALL NOT include full page browsing (fetching and rendering entire page
 - **WHEN** a web search is performed
 - **THEN** only search result snippets are returned
 - **AND** full page content is not fetched or rendered
-
