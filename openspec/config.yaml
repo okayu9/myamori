@@ -1,7 +1,7 @@
 schema: spec-driven
 
 context: |
-  Purpose: Personal AI assistant on Cloudflare Workers, accessed via Discord.
+  Purpose: Personal AI assistant on Cloudflare Workers, accessed via Telegram.
   Helps with: emails, calendar, files, web search, scheduled tasks.
   Single-user only. Read-only email (forwarding). Human approval for risky ops.
 
@@ -10,7 +10,7 @@ context: |
   LLM: Vercel AI SDK
   ORM: Drizzle ORM + D1
   Validation: Zod
-  Discord: discord-interactions (Webhook)
+  Telegram: Telegram Bot API (Webhook)
   CalDAV: tsdav
   Email: postal-mime
   IaC: OpenTofu
@@ -28,12 +28,12 @@ context: |
   Design principles:
   1. Least Privilege — minimum scope, human-in-the-loop for risky ops
   2. Cloudflare-Native — no VPS, use managed services
-  3. Start Small + Extensible — Phase 1 Discord only, abstracted adapters
+  3. Start Small + Extensible — Phase 1 Telegram only, abstracted adapters
   4. Auditable — log every LLM call and tool execution
   5. Human-Mediated — approval required for mutations
 
   Phased roadmap:
-  Phase 1: Discord adapter, agent loop, email, files, auth, audit
+  Phase 1: Telegram adapter, agent loop, email, files, auth, audit
   Phase 2: Calendar (CalDAV), approval flow, scheduling, web search
   Phase 3: Long-term memory (Vectorize), Slack adapter, morning briefing
 

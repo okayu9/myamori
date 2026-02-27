@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Manages fixed and dynamic cron jobs, enabling users to create scheduled tasks at runtime via Discord.
+Manages fixed and dynamic cron jobs, enabling users to create scheduled tasks at runtime via Telegram.
 ## Requirements
 ### Requirement: Fixed Cron
 
@@ -18,13 +18,13 @@ This fixed cron SHALL be used solely to poll for dynamic cron jobs. All user-fac
 
 ### Requirement: Dynamic Cron Jobs
 
-Users SHALL be able to create, modify, and disable scheduled jobs via Discord at runtime.
+Users SHALL be able to create, modify, and disable scheduled jobs via Telegram at runtime.
 
 Job definitions SHALL be stored in D1.
 
 #### Scenario: User creates a scheduled job
 
-- **WHEN** a user requests a new scheduled job via Discord
+- **WHEN** a user requests a new scheduled job via Telegram
 - **THEN** the job definition is stored in D1
 - **AND** the job begins executing at the scheduled times
 
