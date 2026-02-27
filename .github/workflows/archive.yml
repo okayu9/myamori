@@ -1,0 +1,93 @@
+name: OpenSpec Archive
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  archive:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for unarchived changes
+        id: check
+        run: |
+          # Find change directories that are not archived
+          changes=$(find openspec/changes -mindepth 1 -maxdepth 1 -type d ! -name archive 2>/dev/null)
+          if [ -z "$changes" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "No unarchived changes found."
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+            echo "Unarchived changes found:"
+            echo "$changes"
+          fi
+
+      - name: Setup Node.js
+        if: steps.check.outputs.skip == 'false'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Run openspec archive
+        if: steps.check.outputs.skip == 'false'
+        id: archive
+        run: |
+          npx openspec@1 archive -y 2>&1 | tee /tmp/archive-output.txt
+          echo "success=true" >> "$GITHUB_OUTPUT"
+        continue-on-error: true
+
+      - name: Create branch and commit
+        if: steps.check.outputs.skip == 'false'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          branch="archive/run-${{ github.run_id }}-${{ github.run_attempt }}"
+          git checkout -b "$branch"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            echo "has_changes=false" >> "$GITHUB_ENV"
+          else
+            git commit -m "chore: archive openspec changes"
+            git push origin "$branch"
+            echo "has_changes=true" >> "$GITHUB_ENV"
+            echo "branch=$branch" >> "$GITHUB_ENV"
+          fi
+
+      - name: Create PR (success)
+        if: steps.check.outputs.skip == 'false' && env.has_changes == 'true' && steps.archive.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          pr_url=$(gh pr create \
+            --title "chore: archive openspec changes" \
+            --body "Automated archive of completed OpenSpec changes." \
+            --head "${{ env.branch }}")
+          gh pr merge "$pr_url" --auto --squash
+
+      - name: Handle archive failure
+        if: steps.check.outputs.skip == 'false' && steps.archive.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "${{ env.has_changes }}" != "true" ]; then
+            echo "::error::openspec archive failed and produced no changes. Manual resolution required."
+            echo "See: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            exit 1
+          fi
+          gh pr create \
+            --title "chore: archive openspec changes (manual resolution needed)" \
+            --body "$(cat <<'BODY'
+          > **Warning**: `openspec archive` failed. Manual resolution is required.
+
+          Check the [workflow run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
+          BODY
+          )" \
+            --draft \
+            --head "${{ env.branch }}"
