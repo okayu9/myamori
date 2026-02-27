@@ -38,7 +38,11 @@ jobs:
         if: steps.check.outputs.skip == 'false'
         id: archive
         run: |
-          npx @fission-ai/openspec@1 archive -y 2>&1 | tee /tmp/archive-output.txt
+          changes=$(find openspec/changes -mindepth 1 -maxdepth 1 -type d ! -name archive -printf '%f\n' 2>/dev/null)
+          for name in $changes; do
+            echo "Archiving: $name"
+            npx @fission-ai/openspec@1 archive "$name" --yes 2>&1 | tee -a /tmp/archive-output.txt
+          done
           echo "success=true" >> "$GITHUB_OUTPUT"
         continue-on-error: true
 
