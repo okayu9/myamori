@@ -8,4 +8,4 @@
 ## 2. Verification
 
 - [x] 2.1 Verify workflow YAML is valid (manual review)
-- [ ] 2.2 Verify the workflow runs on the PR itself (push and check)
+- [x] 2.2 Verify the workflow runs on the PR itself (push and check)
