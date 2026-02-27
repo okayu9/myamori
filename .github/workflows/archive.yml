@@ -38,7 +38,7 @@ jobs:
         if: steps.check.outputs.skip == 'false'
         id: archive
         run: |
-          npx openspec@1 archive -y 2>&1 | tee /tmp/archive-output.txt
+          npx @fission-ai/openspec@1 archive -y 2>&1 | tee /tmp/archive-output.txt
           echo "success=true" >> "$GITHUB_OUTPUT"
         continue-on-error: true
 
