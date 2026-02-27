@@ -1,9 +1,5 @@
-# Security Specification
+## MODIFIED Requirements
 
-## Purpose
-
-Defines authentication, authorization, approval flow, audit logging, rate limiting, and credential management for the personal AI assistant.
-## Requirements
 ### Requirement: Credential Management
 
 All API keys, OAuth tokens, and passwords SHALL be stored via `wrangler secret put` in Cloudflare Secrets.
@@ -136,4 +132,3 @@ External connections SHALL be limited to: LLM API, iCloud CalDAV, and web search
 
 - **WHEN** application code attempts to fetch a URL not in the approved list
 - **THEN** the request is not made
-

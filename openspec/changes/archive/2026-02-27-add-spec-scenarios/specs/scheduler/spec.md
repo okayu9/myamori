@@ -1,9 +1,5 @@
-# Scheduler Specification
+## MODIFIED Requirements
 
-## Purpose
-
-Manages fixed and dynamic cron jobs, enabling users to create scheduled tasks at runtime via Discord.
-## Requirements
 ### Requirement: Fixed Cron
 
 The system SHALL define a single static cron in `wrangler.toml` at a 5-minute interval.
@@ -94,4 +90,3 @@ Idle polling SHALL incur zero LLM cost.
 
 - **WHEN** a due job requires only a D1 query (e.g., counting unread emails)
 - **THEN** the job executes without an LLM call
-

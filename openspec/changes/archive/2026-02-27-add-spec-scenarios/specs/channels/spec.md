@@ -1,9 +1,5 @@
-# Channels Specification
+## MODIFIED Requirements
 
-## Purpose
-
-Channel abstraction layer that normalizes interactions from different messaging platforms into a common format, with Discord as the Phase 1 implementation.
-## Requirements
 ### Requirement: Channel Abstraction
 
 The system SHALL define a common `IncomingMessage` type and a `ChannelAdapter` interface shared by all channel implementations.
@@ -39,13 +35,13 @@ Because Discord requires Interaction responses within 3 seconds and LLM calls ex
 
 1. Immediately respond with `deferReply` to acknowledge the interaction.
 2. Process the LLM call asynchronously.
-3. Send the result via `editReply` to finish the deferred response.
+3. Send the result via `followUp` (editing the deferred reply).
 
 #### Scenario: Deferred reply for LLM processing
 
 - **WHEN** a Discord interaction is received
 - **THEN** the adapter responds with `deferReply` within 3 seconds
-- **AND** sends the LLM result via `editReply` after processing completes
+- **AND** sends the LLM result via `followUp` after processing completes
 
 ### Requirement: Slash Command
 
@@ -78,4 +74,3 @@ Future channel adapters SHALL implement the same `ChannelAdapter` interface. Whe
 - **WHEN** a Slack adapter is implemented
 - **THEN** it implements the `ChannelAdapter` interface
 - **AND** uses HTTP mode instead of socket mode
-

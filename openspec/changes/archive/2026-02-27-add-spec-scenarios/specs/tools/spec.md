@@ -1,9 +1,5 @@
-# Tools Specification
+## MODIFIED Requirements
 
-## Purpose
-
-Defines the tool framework and each tool's behavior, inputs, outputs, and risk levels. Tools allow the assistant to interact with external services and storage.
-## Requirements
 ### Requirement: Tool Definition
 
 Every tool SHALL be defined with a Zod schema for input/output validation and an explicit risk level.
@@ -215,7 +211,7 @@ The system SHALL provide a web search tool using a search API (e.g., Tavily) tha
 
 Risk level SHALL be `low`.
 
-Phase 1 SHALL NOT include full-page browsing (fetching and rendering entire pages).
+Phase 1 SHALL NOT include full page browsing (fetching and rendering entire pages).
 
 #### Scenario: Web search executed
 
@@ -223,9 +219,8 @@ Phase 1 SHALL NOT include full-page browsing (fetching and rendering entire page
 - **THEN** the search API is called
 - **AND** results are returned immediately (risk: `low`)
 
-#### Scenario: No full-page browsing
+#### Scenario: No full page browsing
 
 - **WHEN** a web search is performed
 - **THEN** only search result snippets are returned
-- **AND** full-page content is not fetched or rendered
-
+- **AND** full page content is not fetched or rendered

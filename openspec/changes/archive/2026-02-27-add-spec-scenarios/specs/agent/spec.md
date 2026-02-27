@@ -1,9 +1,5 @@
-# Agent Specification
+## MODIFIED Requirements
 
-## Purpose
-
-The agent core that orchestrates message processing, LLM invocation, tool execution, conversation history, and memory management.
-## Requirements
 ### Requirement: Message Processing Flow
 
 The agent SHALL process each incoming message through the following steps in order:
@@ -108,4 +104,3 @@ Long-term memory is a Phase 3 feature.
 - **WHEN** a new message is received
 - **THEN** the system performs a vector search in Vectorize
 - **AND** includes relevant past memories in the LLM context
-
