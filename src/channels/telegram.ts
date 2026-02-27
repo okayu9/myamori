@@ -13,7 +13,12 @@ export class TelegramAdapter implements ChannelAdapter {
 	}
 
 	async parseMessage(req: Request): Promise<IncomingMessage | null> {
-		const body = await req.json();
+		let body: unknown;
+		try {
+			body = await req.json();
+		} catch {
+			return null;
+		}
 		const result = telegramUpdateSchema.safeParse(body);
 		if (!result.success) return null;
 
