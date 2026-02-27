@@ -26,15 +26,15 @@ This project uses [GitHub Flow](https://docs.github.com/en/get-started/using-git
 Direct pushes to `main` are prohibited. All changes go through pull requests.
 
 ```
- 1. Branch        git checkout -b feat/add-discord-adapter
+ 1. Branch        git checkout -b feat/add-telegram-adapter
                   ↓
- 2. Propose       /opsx:propose "Add Discord webhook adapter"
+ 2. Propose       /opsx:propose "Add Telegram webhook adapter"
                   → generates proposal.md, design.md, tasks.md
                   ↓
  3. Implement     /opsx:apply
                   → write code and tests following tasks.md
                   ↓
- 4. Push & PR     git push -u origin feat/add-discord-adapter
+ 4. Push & PR     git push -u origin feat/add-telegram-adapter
                   gh pr create
                   ↓
  5. CI            Biome lint + tsc type check + Vitest (automatic)
@@ -45,7 +45,7 @@ Direct pushes to `main` are prohibited. All changes go through pull requests.
                   ↓
  8. Post-merge    CI: staging deploy + openspec archive (parallel)
                   ↓
- 9. Verify        Test on staging with the test Discord server
+ 9. Verify        Test on staging with the test Telegram bot
                   ↓
 10. Production    Manually trigger production deploy via GitHub Actions
                   ↓
@@ -68,14 +68,14 @@ The `<type>` prefix aligns with [Conventional Commits](#commit-messages):
 
 | Type | Purpose | Example |
 |------|---------|---------|
-| `feat` | New feature | `feat/add-discord-adapter` |
+| `feat` | New feature | `feat/add-telegram-adapter` |
 | `fix` | Bug fix | `fix/email-parsing-utf8` |
 | `refactor` | Code restructuring | `refactor/extract-tool-runner` |
 | `chore` | Maintenance | `chore/update-dependencies` |
 | `docs` | Documentation | `docs/add-contributing` |
 | `test` | Test additions | `test/add-agent-unit-tests` |
 | `ci` | CI/CD changes | `ci/add-lint-workflow` |
-| `archive` | Auto-generated archive | `archive/add-discord-adapter` |
+| `archive` | Auto-generated archive | `archive/add-telegram-adapter` |
 
 ## Commit Messages
 
@@ -90,7 +90,7 @@ Format: `<type>(<scope>): <description>`
 Examples:
 
 ```
-feat(channels): add Discord webhook handler
+feat(channels): add Telegram webhook handler
 fix(tools): handle UTF-8 encoded email subjects
 test(agent): add router unit tests
 chore: update dependencies
@@ -114,7 +114,7 @@ BREAKING CHANGE: IncomingMessage.content is now a structured object instead of a
 Use the same Conventional Commits format as commit messages:
 
 ```
-feat: add Discord adapter
+feat: add Telegram adapter
 fix: handle email parsing edge cases
 ```
 
@@ -132,7 +132,7 @@ Deployment uses two environments managed via [GitHub Environments](https://docs.
 
 | Environment | Deploy trigger | Purpose |
 |-------------|---------------|---------|
-| `staging` | Automatic on merge to `main` | Verify with test Discord server |
+| `staging` | Automatic on merge to `main` | Verify with test Telegram bot |
 | `production` | Manual (`workflow_dispatch`) | Live deployment |
 
 ## Releases
@@ -193,7 +193,7 @@ test/
 │   ├── tools/
 │   │   └── email.test.ts
 │   └── channels/
-│       └── discord.test.ts
+│       └── telegram.test.ts
 ├── integration/           # Integration tests
 ├── e2e/                   # End-to-end tests (future)
 └── fixtures/              # Shared test data

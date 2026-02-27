@@ -37,12 +37,12 @@ The following SHALL NOT be managed by OpenTofu:
 - **Worker code and bindings**: Managed by `wrangler.toml` + `wrangler deploy` to avoid dual management of code deployment.
 - **D1 schema (table definitions)**: Managed by Drizzle ORM migrations.
 - **Secrets (API keys, etc.)**: Managed by `wrangler secret put` to keep secrets out of OpenTofu state.
-- **Discord app configuration**: Managed manually via Discord Developer Portal.
+- **Telegram bot configuration**: Managed manually via BotFather.
 
 #### Scenario: Worker code not in OpenTofu state
 
 - **WHEN** `tofu plan` is run
-- **THEN** it does not include Worker code, D1 schema, secrets, or Discord app configuration
+- **THEN** it does not include Worker code, D1 schema, secrets, or Telegram bot configuration
 
 ### Requirement: State Management
 
@@ -159,7 +159,7 @@ my-assistant/
 │   ├── index.ts                    # Worker entry point (Hono app)
 │   ├── channels/
 │   │   ├── types.ts                # IncomingMessage, ChannelAdapter interface
-│   │   ├── discord.ts              # Discord Interaction Webhook adapter
+│   │   ├── telegram.ts             # Telegram Bot Webhook adapter
 │   │   └── email-worker.ts         # Email Workers handler
 │   ├── agent/
 │   │   ├── loop.ts                 # Message → LLM → Tool → Reply

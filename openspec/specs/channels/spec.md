@@ -2,15 +2,17 @@
 
 ## Purpose
 
-Channel abstraction layer that normalizes interactions from different messaging platforms into a common format, with Discord as the Phase 1 implementation.
+Channel abstraction layer that normalizes interactions from different messaging platforms into a common format, with Telegram as the Phase 1 implementation.
+
 ## Requirements
+
 ### Requirement: Channel Abstraction
 
 The system SHALL define a common `IncomingMessage` type and a `ChannelAdapter` interface shared by all channel implementations.
 
 A `ChannelAdapter` SHALL be responsible for:
 
-- Webhook request signature verification.
+- Webhook request verification.
 - Parsing incoming requests into `IncomingMessage`.
 - Sending text replies.
 - Sending approval requests with approve/reject button UI.
@@ -21,52 +23,66 @@ A `ChannelAdapter` SHALL be responsible for:
 - **THEN** it implements the `ChannelAdapter` interface
 - **AND** produces `IncomingMessage` objects from incoming requests
 
-### Requirement: Discord Webhook Mode
+### Requirement: Telegram Webhook Mode
 
-The Discord adapter SHALL use the Interaction Endpoint (Webhook) mode, not the Bot Gateway (WebSocket) mode.
+The Telegram adapter SHALL receive messages via Bot API webhooks (set via `setWebhook`).
 
-The system SHALL NOT maintain persistent WebSocket connections, as Workers' stateless execution model is unsuitable for long-lived connections.
+The system SHALL NOT use long polling (`getUpdates`), as Workers' stateless execution model requires a push-based approach.
 
-#### Scenario: Discord uses webhook mode
+#### Scenario: Telegram uses webhook mode
 
-- **WHEN** a Discord interaction arrives
-- **THEN** the adapter processes it as an HTTP webhook request
-- **AND** does not establish a WebSocket connection
+- **WHEN** a Telegram message is sent to the bot
+- **THEN** the adapter receives it as an HTTP POST from the Telegram Bot API
+- **AND** does not use long polling
 
-### Requirement: Deferred Response
+### Requirement: Async Response
 
-Because Discord requires Interaction responses within 3 seconds and LLM calls exceed this limit, the Discord adapter SHALL:
+The Worker SHALL return HTTP 200 to the Telegram webhook immediately and process the message asynchronously using `waitUntil`.
 
-1. Immediately respond with `deferReply` to acknowledge the interaction.
-2. Process the LLM call asynchronously.
-3. Send the result via `editReply` to finish the deferred response.
+The actual reply SHALL be sent via the Telegram Bot API `sendMessage` method.
 
-#### Scenario: Deferred reply for LLM processing
+#### Scenario: Async reply via Bot API
 
-- **WHEN** a Discord interaction is received
-- **THEN** the adapter responds with `deferReply` within 3 seconds
-- **AND** sends the LLM result via `editReply` after processing completes
+- **WHEN** a Telegram webhook request arrives
+- **THEN** the Worker returns HTTP 200 immediately
+- **AND** sends the LLM result via `sendMessage` after processing completes
 
-### Requirement: Slash Command
+### Requirement: Webhook Verification
 
-The system SHALL register a `/ask` slash command that accepts text input and optional file attachments.
+The Telegram adapter SHALL verify incoming webhook requests using the `X-Telegram-Bot-Api-Secret-Token` header.
 
-Bot permissions SHALL be kept to the minimum required.
+The secret token SHALL be set when configuring the webhook via `setWebhook` and stored as a Cloudflare Secret.
 
-#### Scenario: User invokes /ask command
+#### Scenario: Valid webhook request accepted
 
-- **WHEN** a user sends `/ask` with text input
-- **THEN** the system processes the text as a user message
-- **AND** returns the assistant's response
+- **WHEN** a webhook request arrives with a valid secret token header
+- **THEN** the request is processed
+
+#### Scenario: Invalid webhook request rejected
+
+- **WHEN** a webhook request arrives with an invalid or missing secret token header
+- **THEN** the request is rejected with HTTP 401
+
+### Requirement: Topic-Based Conversations
+
+The system SHALL use a Telegram supergroup with Forum mode (Topics) enabled to organize conversations by topic.
+
+The adapter SHALL extract `message_thread_id` from incoming updates and use it to scope conversation history and route replies to the correct topic.
+
+#### Scenario: Message routed by topic
+
+- **WHEN** a message arrives with a `message_thread_id`
+- **THEN** the adapter includes the topic ID in the `IncomingMessage`
+- **AND** replies are sent to the same topic
 
 ### Requirement: Message Normalization
 
-The Discord adapter SHALL parse Discord interaction payloads into the normalized `IncomingMessage` format, which includes: user ID, text content, optional attachments, channel/thread context, and interaction token for follow-up replies.
+The Telegram adapter SHALL parse Telegram `Update` objects into the normalized `IncomingMessage` format, which includes: user ID, text content, optional attachments (photos, documents), chat ID, and message thread ID (topic).
 
-#### Scenario: Discord payload normalized
+#### Scenario: Telegram Update normalized
 
-- **WHEN** a Discord interaction payload is received
-- **THEN** the adapter extracts user ID, text content, attachments, channel context, and interaction token
+- **WHEN** a Telegram `Update` object is received
+- **THEN** the adapter extracts user ID, text content, attachments, chat ID, and message thread ID
 - **AND** produces an `IncomingMessage` object
 
 ### Requirement: Future Extensibility
@@ -78,4 +94,3 @@ Future channel adapters SHALL implement the same `ChannelAdapter` interface. Whe
 - **WHEN** a Slack adapter is implemented
 - **THEN** it implements the `ChannelAdapter` interface
 - **AND** uses HTTP mode instead of socket mode
-

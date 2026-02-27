@@ -3,7 +3,9 @@
 ## Purpose
 
 Defines authentication, authorization, approval flow, audit logging, rate limiting, and credential management for the personal AI assistant.
+
 ## Requirements
+
 ### Requirement: Credential Management
 
 All API keys, OAuth tokens, and passwords SHALL be stored via `wrangler secret put` in Cloudflare Secrets.
@@ -29,18 +31,18 @@ Because app-specific passwords are static credentials (valid until explicitly re
 
 ### Requirement: Authentication
 
-The system SHALL authenticate users via a Discord User ID allowlist.
+The system SHALL authenticate users via a Telegram User ID allowlist.
 
 Messages from non-allowlisted users SHALL be silently ignored.
 
 #### Scenario: Allowlisted user authenticated
 
-- **WHEN** a message arrives from a user whose Discord ID is in the allowlist
+- **WHEN** a message arrives from a user whose Telegram ID is in the allowlist
 - **THEN** the message is processed normally
 
 #### Scenario: Non-allowlisted user rejected
 
-- **WHEN** a message arrives from a user whose Discord ID is not in the allowlist
+- **WHEN** a message arrives from a user whose Telegram ID is not in the allowlist
 - **THEN** the message is silently ignored
 
 ### Requirement: Approval Flow
@@ -50,7 +52,7 @@ The approval flow SHALL be triggered when a tool with risk level `high` is invok
 The system SHALL:
 
 1. Save the pending operation to D1 with a timeout of 10 minutes.
-2. Send a preview of the operation to Discord with Approve/Reject buttons.
+2. Send a preview of the operation to Telegram with an inline keyboard (Approve/Reject buttons).
 3. On **Approve**: execute the tool and return the result.
 4. On **Reject** or **timeout**: cancel and notify.
 
@@ -130,10 +132,9 @@ The primary purpose SHALL be cost runaway prevention.
 
 The Worker code SHALL only communicate with explicitly fetched endpoints.
 
-External connections SHALL be limited to: LLM API, iCloud CalDAV, and web search API.
+External connections SHALL be limited to: LLM API, Telegram Bot API, iCloud CalDAV, and web search API.
 
 #### Scenario: Unauthorized outbound request blocked
 
 - **WHEN** application code attempts to fetch a URL not in the approved list
 - **THEN** the request is not made
-

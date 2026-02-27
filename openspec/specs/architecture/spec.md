@@ -6,13 +6,13 @@ Defines the overall system architecture, request flow, component structure, and 
 ## Requirements
 ### Requirement: Request Flow
 
-The system SHALL receive all user interactions via Discord Interaction Webhooks routed to Cloudflare Workers.
+The system SHALL receive all user interactions via Telegram Bot Webhooks routed to Cloudflare Workers.
 
 The system SHALL process requests through a three-stage pipeline: Channel Adapter → Agent Core → Tool Executor.
 
 #### Scenario: End-to-end request processing
 
-- **WHEN** a user sends a Discord interaction
+- **WHEN** a user sends a Telegram message
 - **THEN** the request is received by the Cloudflare Worker
 - **AND** processed through Channel Adapter, Agent Core, and Tool Executor in order
 
@@ -80,7 +80,7 @@ The system SHALL provide an Approval Flow for high-risk operations.
 
 The system SHALL use the following Cloudflare services:
 
-- **Workers**: Main API server, Discord webhook handler, agent loop, Cron Triggers.
+- **Workers**: Main API server, Telegram webhook handler, agent loop, Cron Triggers.
 - **D1**: Conversation history, audit logs, approval queue, cron job definitions, email metadata/summaries, calendar UID tracking.
 - **R2**: User file storage, raw email data (body and attachments).
 - **Queues**: Async tool execution and email processing (producer/consumer pattern).
