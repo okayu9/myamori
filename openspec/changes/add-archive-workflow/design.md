@@ -25,7 +25,7 @@ The workflow first checks if `openspec/changes/` contains any non-archived chang
 
 **Alternative considered**: Always run `openspec archive` and let it no-op — rejected because it may still produce a commit or output even when nothing changed.
 
-### Decision: Use `gh pr create` with `--label auto-merge` and `gh pr merge --auto`
+### Decision: Use `gh pr create` and `gh pr merge --auto`
 
 After creating the PR, immediately enable auto-merge via `gh pr merge --auto --squash`. This uses GitHub's native auto-merge feature. If required status checks are configured later, auto-merge waits for them to pass.
 

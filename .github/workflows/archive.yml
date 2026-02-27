@@ -47,7 +47,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          branch="archive/run-${{ github.run_id }}"
+          branch="archive/run-${{ github.run_id }}-${{ github.run_attempt }}"
           git checkout -b "$branch"
           git add -A
           if git diff --cached --quiet; then
@@ -62,6 +62,8 @@ jobs:
 
       - name: Create PR (success)
         if: steps.check.outputs.skip == 'false' && env.has_changes == 'true' && steps.archive.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           pr_url=$(gh pr create \
             --title "chore: archive openspec changes" \
@@ -69,9 +71,16 @@ jobs:
             --head "${{ env.branch }}")
           gh pr merge "$pr_url" --auto --squash
 
-      - name: Create Draft PR (failure)
-        if: steps.check.outputs.skip == 'false' && env.has_changes == 'true' && steps.archive.outcome == 'failure'
+      - name: Handle archive failure
+        if: steps.check.outputs.skip == 'false' && steps.archive.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
+          if [ "${{ env.has_changes }}" != "true" ]; then
+            echo "::error::openspec archive failed and produced no changes. Manual resolution required."
+            echo "See: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            exit 1
+          fi
           gh pr create \
             --title "chore: archive openspec changes (manual resolution needed)" \
             --body "$(cat <<'BODY'

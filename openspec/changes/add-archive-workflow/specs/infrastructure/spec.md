@@ -17,7 +17,7 @@ The CI system SHALL run an archive workflow on every push to `main` that checks 
 - **WHEN** a push to `main` occurs
 - **AND** `openspec/changes/` contains unarchived changes
 - **AND** `openspec archive` fails
-- **THEN** the workflow creates a Draft PR with uncommitted changes
+- **THEN** the workflow creates a Draft PR with the changes produced before the failure
 - **AND** the PR body contains a warning indicating manual resolution is needed
 
 #### Scenario: No unarchived changes
