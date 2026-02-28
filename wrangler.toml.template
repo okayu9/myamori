@@ -5,11 +5,19 @@ compatibility_date = "2025-01-01"
 # Secrets (set via `wrangler secret put` or GitHub Secrets in CI):
 # - TELEGRAM_BOT_TOKEN
 # - TELEGRAM_WEBHOOK_SECRET
+# - ANTHROPIC_API_KEY
+# - ALLOWED_USER_IDS
 
 [[d1_databases]]
 binding = "DB"
 database_name = "${D1_DATABASE_NAME}"
 database_id = "${D1_DATABASE_ID}"
+migrations_dir = "drizzle/migrations"
+
+[[workflows]]
+name = "agent-workflow"
+binding = "AGENT_WORKFLOW"
+class_name = "AgentWorkflow"
 
 [[r2_buckets]]
 binding = "BUCKET"
@@ -22,6 +30,7 @@ name = "myamori-staging"
 binding = "DB"
 database_name = "${STAGING_D1_DATABASE_NAME}"
 database_id = "${STAGING_D1_DATABASE_ID}"
+migrations_dir = "drizzle/migrations"
 
 [[env.staging.r2_buckets]]
 binding = "BUCKET"

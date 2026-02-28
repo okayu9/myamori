@@ -1,9 +1,15 @@
 import { Hono } from "hono";
+import type { AgentWorkflowParams } from "./agent/workflow";
 import { TelegramAdapter } from "./channels/telegram";
 
 type Bindings = {
 	TELEGRAM_BOT_TOKEN: string;
 	TELEGRAM_WEBHOOK_SECRET: string;
+	ALLOWED_USER_IDS: string;
+	ANTHROPIC_API_KEY: string;
+	ANTHROPIC_MODEL?: string;
+	AGENT_WORKFLOW: Workflow<AgentWorkflowParams>;
+	DB: D1Database;
 };
 
 const app = new Hono<{ Bindings: Bindings }>();
@@ -25,11 +31,21 @@ app.post("/telegram/webhook", async (c) => {
 		return c.json({ ok: true });
 	}
 
-	c.executionCtx.waitUntil(
-		adapter.sendReply(message.chatId, message.text, message.threadId),
-	);
+	const allowedIds = c.env.ALLOWED_USER_IDS.split(",").map((id) => id.trim());
+	if (!allowedIds.includes(message.userId)) {
+		return c.json({ ok: true });
+	}
+
+	await c.env.AGENT_WORKFLOW.create({
+		params: {
+			chatId: message.chatId,
+			userMessage: message.text,
+			threadId: message.threadId,
+		},
+	});
 
 	return c.json({ ok: true });
 });
 
 export default app;
+export { AgentWorkflow } from "./agent/workflow";
