@@ -66,6 +66,67 @@ export class TelegramAdapter implements ChannelAdapter {
 			);
 		}
 	}
+
+	async sendMessageWithInlineKeyboard(
+		chatId: string,
+		text: string,
+		buttons: Array<{ text: string; callbackData: string }>,
+		threadId?: number,
+	): Promise<void> {
+		const url = `https://api.telegram.org/bot${this.botToken}/sendMessage`;
+		const body: Record<string, unknown> = {
+			chat_id: chatId,
+			text,
+			reply_markup: {
+				inline_keyboard: [
+					buttons.map((b) => ({
+						text: b.text,
+						callback_data: b.callbackData,
+					})),
+				],
+			},
+		};
+		if (threadId !== undefined) {
+			body.message_thread_id = threadId;
+		}
+		const response = await fetch(url, {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify(body),
+		});
+		const data: { ok: boolean; error_code?: number; description?: string } =
+			await response.json();
+		if (!data.ok) {
+			throw new Error(
+				`Telegram sendMessage failed (${data.error_code}): ${data.description}`,
+			);
+		}
+	}
+
+	async answerCallbackQuery(
+		callbackQueryId: string,
+		text?: string,
+	): Promise<void> {
+		const url = `https://api.telegram.org/bot${this.botToken}/answerCallbackQuery`;
+		const body: Record<string, unknown> = {
+			callback_query_id: callbackQueryId,
+		};
+		if (text !== undefined) {
+			body.text = text;
+		}
+		const response = await fetch(url, {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify(body),
+		});
+		const data: { ok: boolean; error_code?: number; description?: string } =
+			await response.json();
+		if (!data.ok) {
+			throw new Error(
+				`Telegram answerCallbackQuery failed (${data.error_code}): ${data.description}`,
+			);
+		}
+	}
 }
 
 function extractAttachments(msg: TelegramMessage): Attachment[] {

@@ -5,6 +5,8 @@ import {
 } from "cloudflare:workers";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { generateText, stepCountIs } from "ai";
+import { createApproval } from "../approval/handler";
+import { TelegramAdapter } from "../channels/telegram";
 import { createDb } from "../db";
 import { ToolRegistry } from "../tools/registry";
 import { createWebSearchTool } from "../tools/web-search";
@@ -73,7 +75,40 @@ export class AgentWorkflow extends WorkflowEntrypoint<
 							})),
 							{ role: "user" as const, content: userMessage },
 						],
-						tools: registry.toAISDKTools(),
+						tools: registry.toAISDKTools({
+							onHighRisk: async (toolName, input) => {
+								const db = createDb(this.env.DB);
+								const approvalId = await createApproval(db, {
+									chatId,
+									threadId,
+									toolName,
+									toolInput: input,
+								});
+
+								const telegram = new TelegramAdapter(
+									this.env.TELEGRAM_BOT_TOKEN,
+									"",
+								);
+								const preview = `🔒 Approval required: ${toolName}\n\nInput: ${JSON.stringify(input, null, 2)}`;
+								await telegram.sendMessageWithInlineKeyboard(
+									chatId,
+									preview,
+									[
+										{
+											text: "✅ Approve",
+											callbackData: `approve:${approvalId}`,
+										},
+										{
+											text: "❌ Reject",
+											callbackData: `reject:${approvalId}`,
+										},
+									],
+									threadId,
+								);
+
+								return `Approval requested for ${toolName}. The user will see an Approve/Reject button in Telegram.`;
+							},
+						}),
 						stopWhen: stepCountIs(5),
 					});
 
