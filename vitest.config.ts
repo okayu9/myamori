@@ -24,6 +24,7 @@ export default defineWorkersConfig(async () => {
 							TAVILY_API_KEY: "test-tavily-key",
 							TEST_MIGRATIONS: migrations,
 						},
+						kvNamespaces: ["RATE_LIMIT_KV"],
 						d1Databases: ["DB"],
 					},
 				},
