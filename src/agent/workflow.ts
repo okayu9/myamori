@@ -7,6 +7,7 @@ import { createAnthropic } from "@ai-sdk/anthropic";
 import { generateText, stepCountIs } from "ai";
 import { createDb } from "../db";
 import { ToolRegistry } from "../tools/registry";
+import { createWebSearchTool } from "../tools/web-search";
 import { loadHistory, saveMessages } from "./history";
 import { buildSystemPrompt } from "./prompt";
 
@@ -21,6 +22,7 @@ export interface AgentWorkflowEnv {
 	ANTHROPIC_API_KEY: string;
 	ANTHROPIC_MODEL?: string;
 	TELEGRAM_BOT_TOKEN: string;
+	TAVILY_API_KEY?: string;
 }
 
 export class AgentWorkflow extends WorkflowEntrypoint<
@@ -57,7 +59,9 @@ export class AgentWorkflow extends WorkflowEntrypoint<
 					const model = this.env.ANTHROPIC_MODEL ?? "claude-haiku-4-5";
 
 					const registry = new ToolRegistry();
-					// Tools will be registered here in future changes
+					if (this.env.TAVILY_API_KEY?.trim()) {
+						registry.register(createWebSearchTool(this.env.TAVILY_API_KEY));
+					}
 
 					const result = await generateText({
 						model: anthropic(model),

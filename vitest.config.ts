@@ -21,6 +21,7 @@ export default defineWorkersConfig(async () => {
 							ALLOWED_USER_IDS: "42",
 							ANTHROPIC_API_KEY: "test-api-key",
 							ANTHROPIC_MODEL: "claude-haiku-4-5",
+							TAVILY_API_KEY: "test-tavily-key",
 							TEST_MIGRATIONS: migrations,
 						},
 						d1Databases: ["DB"],

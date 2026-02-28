@@ -7,5 +7,6 @@ declare module "cloudflare:test" {
 		ALLOWED_USER_IDS: string;
 		ANTHROPIC_API_KEY: string;
 		ANTHROPIC_MODEL: string;
+		TAVILY_API_KEY: string;
 	}
 }
