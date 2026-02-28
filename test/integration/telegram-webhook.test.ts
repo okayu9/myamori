@@ -1,13 +1,6 @@
-import { fetchMock, SELF } from "cloudflare:test";
-import { afterEach, beforeAll, describe, expect, it } from "vitest";
+import { SELF } from "cloudflare:test";
+import { describe, expect, it } from "vitest";
 import "../../src/index";
-
-beforeAll(() => {
-	fetchMock.activate();
-	fetchMock.disableNetConnect();
-});
-
-afterEach(() => fetchMock.assertNoPendingInterceptors());
 
 describe("POST /telegram/webhook", () => {
 	it("returns 401 when secret token is missing", async () => {
@@ -44,12 +37,7 @@ describe("POST /telegram/webhook", () => {
 		expect(await response.json()).toEqual({ ok: true });
 	});
 
-	it("returns 200 and echoes reply for valid message", async () => {
-		fetchMock
-			.get("https://api.telegram.org")
-			.intercept({ path: "/bottest-bot-token/sendMessage", method: "POST" })
-			.reply(200, { ok: true });
-
+	it("returns 200 and silently ignores non-allowlisted user", async () => {
 		const response = await SELF.fetch("http://localhost/telegram/webhook", {
 			method: "POST",
 			headers: {
@@ -60,7 +48,7 @@ describe("POST /telegram/webhook", () => {
 				update_id: 1,
 				message: {
 					message_id: 100,
-					from: { id: 42, first_name: "Test" },
+					from: { id: 999, first_name: "Stranger" },
 					chat: { id: -1001, type: "supergroup" },
 					text: "hello",
 				},
