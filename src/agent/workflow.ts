@@ -4,8 +4,9 @@ import {
 	type WorkflowStep,
 } from "cloudflare:workers";
 import { createAnthropic } from "@ai-sdk/anthropic";
-import { generateText } from "ai";
+import { generateText, stepCountIs } from "ai";
 import { createDb } from "../db";
+import { ToolRegistry } from "../tools/registry";
 import { loadHistory, saveMessages } from "./history";
 import { buildSystemPrompt } from "./prompt";
 
@@ -55,9 +56,12 @@ export class AgentWorkflow extends WorkflowEntrypoint<
 					});
 					const model = this.env.ANTHROPIC_MODEL ?? "claude-haiku-4-5";
 
+					const registry = new ToolRegistry();
+					// Tools will be registered here in future changes
+
 					const result = await generateText({
 						model: anthropic(model),
-						system: buildSystemPrompt(),
+						system: buildSystemPrompt(registry.getAll()),
 						messages: [
 							...history.map((m) => ({
 								role: m.role as "user" | "assistant",
@@ -65,6 +69,8 @@ export class AgentWorkflow extends WorkflowEntrypoint<
 							})),
 							{ role: "user" as const, content: userMessage },
 						],
+						tools: registry.toAISDKTools(),
+						stopWhen: stepCountIs(5),
 					});
 
 					return result.text;

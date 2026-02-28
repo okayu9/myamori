@@ -28,7 +28,14 @@ describe("history", () => {
 		it("limits to 20 most recent messages", async () => {
 			const db = getDb();
 			for (let i = 0; i < 12; i++) {
-				await saveMessages(db, "chat-limit", `msg-${i}`, `reply-${i}`);
+				const baseTime = new Date(2025, 0, 1, 0, 0, i);
+				await saveMessages(
+					db,
+					"chat-limit",
+					`msg-${i}`,
+					`reply-${i}`,
+					baseTime,
+				);
 			}
 			const result = await loadHistory(db, "chat-limit");
 			expect(result).toHaveLength(20);
