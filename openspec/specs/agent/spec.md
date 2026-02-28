@@ -8,84 +8,121 @@ The agent core that orchestrates message processing, LLM invocation, tool execut
 
 The agent SHALL process each incoming message through the following steps in order:
 
-1. Verify the user is in the allowlist.
-2. Retrieve recent conversation history from D1 and relevant long-term memories from Vectorize.
-3. Send system prompt, context, and tool definitions to the LLM.
-4. If the LLM returns a text response, send it to the user.
-5. If the LLM requests a tool call, route it to the Tool Executor:
-   - `low` risk: execute immediately, feed the result back to the LLM to continue the conversation.
-   - `high` risk: send an approval request; on approval execute and return the result, on rejection or timeout cancel.
-6. Save the conversation history to D1.
-7. Write an audit log entry to D1.
+1. Verify the user is in the allowlist (in the webhook handler, before dispatching).
+2. Dispatch a Cloudflare Workflow instance for the message.
+3. In the Workflow, retrieve recent conversation history from D1.
+4. Build the system prompt with tool descriptions and call the LLM via Vercel AI SDK with registered tools and `stopWhen: stepCountIs(5)` for agentic looping.
+5. If the LLM returns a text response, send it to the user via Telegram.
+6. If the LLM requests a tool call, the AI SDK executes it automatically and feeds the result back to the LLM (up to the Tool Call Limit).
+7. Save the user message and assistant response to D1.
+
+Tool calls, approval flow, audit logging, and long-term memory retrieval are deferred to separate changes.
 
 #### Scenario: Text response from LLM
 
-- **WHEN** an allowlisted user sends a message
+- **WHEN** an allowlisted user sends a text message
 - **AND** the LLM returns a text response without tool calls
-- **THEN** the agent sends the text response to the user
-- **AND** saves the conversation to D1
-- **AND** writes an audit log entry
+- **THEN** the agent sends the text response to the user via Telegram
+- **AND** saves both the user message and assistant response to D1
 
-#### Scenario: Low-risk tool call
+#### Scenario: Tool call from LLM
 
-- **WHEN** the LLM requests a tool call with risk level `low`
-- **THEN** the agent executes the tool immediately
-- **AND** feeds the result back to the LLM
-
-#### Scenario: High-risk tool call approved
-
-- **WHEN** the LLM requests a tool call with risk level `high`
-- **THEN** the agent sends an approval request to the user
-- **AND** on approval, executes the tool and returns the result
+- **WHEN** the LLM requests a tool call during message processing
+- **THEN** the AI SDK executes the tool via the risk-gated wrapper
+- **AND** feeds the result back to the LLM for the next step
+- **AND** continues until the LLM produces a text response or the step limit is reached
 
 #### Scenario: Non-allowlisted user
 
 - **WHEN** a user not in the allowlist sends a message
-- **THEN** the agent does not process the message
+- **THEN** the webhook handler returns 200 OK without dispatching a Workflow
+- **AND** no reply is sent to the user
+
+#### Scenario: LLM call fails
+
+- **WHEN** the LLM call throws an error or times out
+- **THEN** the agent sends an error message to the user via Telegram
+- **AND** the user message is still saved to D1
+
+#### Scenario: Workflow execution
+
+- **WHEN** the webhook handler receives a valid message from an allowlisted user
+- **THEN** the handler dispatches a Cloudflare Workflow instance and returns 200 OK immediately
+- **AND** the Workflow executes the agent steps asynchronously with per-step retry and timeout
 
 ### Requirement: Tool Call Limit
 
-The agent SHALL enforce a maximum number of tool call steps per conversation turn (default: 5) to prevent the LLM from chaining tool calls indefinitely.
+The agent SHALL enforce a maximum of 5 tool call steps per conversation turn via `stopWhen: stepCountIs(5)` in `generateText`.
+
+When the limit is reached, the LLM's last response (text or partial) is sent to the user.
 
 #### Scenario: Tool call limit reached
 
-- **WHEN** the LLM chains 5 tool calls in a single conversation turn
-- **AND** requests a 6th tool call
-- **THEN** the agent stops processing tool calls
-- **AND** returns the accumulated results to the user
+- **WHEN** the LLM chains tool calls reaching 5 steps
+- **THEN** the agent stops processing further tool calls
+- **AND** returns the LLM's last text response to the user
 
 ### Requirement: LLM Abstraction
 
-The agent SHALL use the Vercel AI SDK (`ai` package) for a unified LLM interface, allowing provider/model swaps without changing application code.
+The agent SHALL use the Vercel AI SDK (`ai` package) with the `@ai-sdk/anthropic` provider for LLM invocation.
 
-The specific LLM provider and model SHALL be decided at implementation time.
+The model ID SHALL be configurable via the `ANTHROPIC_MODEL` environment variable, defaulting to `claude-haiku-4-5`.
 
 #### Scenario: LLM invocation uses Vercel AI SDK
 
 - **WHEN** the agent invokes the LLM
-- **THEN** it uses the Vercel AI SDK interface
-- **AND** no provider-specific code is called directly
+- **THEN** it uses `generateText` from the Vercel AI SDK with the Anthropic provider
+- **AND** no provider-specific code is called directly outside the provider configuration
+
+#### Scenario: Model is configurable
+
+- **WHEN** the `ANTHROPIC_MODEL` environment variable is set
+- **THEN** the agent uses the specified model ID for LLM calls
+
+#### Scenario: Default model
+
+- **WHEN** the `ANTHROPIC_MODEL` environment variable is not set
+- **THEN** the agent uses `claude-haiku-4-5` as the model
 
 ### Requirement: System Prompt
 
-The system prompt SHALL be constructed dynamically and include: the assistant's role and personality, available tool descriptions, current date and time, and any relevant context from memory.
+The system prompt SHALL be constructed dynamically and include: the assistant's role and personality, descriptions of all registered tools with their risk levels, the current date and time in ISO 8601 format, and instructions for medium-risk tool reporting.
 
-#### Scenario: Dynamic system prompt construction
+#### Scenario: Dynamic system prompt with tools
 
 - **WHEN** the agent prepares an LLM invocation
-- **THEN** the system prompt includes the assistant's role, tool descriptions, current date/time, and memory context
+- **AND** tools are registered in the registry
+- **THEN** the system prompt includes each tool's name, description, and risk level
+
+#### Scenario: Medium-risk reporting instruction
+
+- **WHEN** the system prompt is constructed
+- **AND** medium-risk tools are registered
+- **THEN** the system prompt includes an instruction to report medium-risk tool actions in the reply
+
+#### Scenario: No tools registered
+
+- **WHEN** the agent constructs the system prompt
+- **AND** no tools are registered
+- **THEN** the tools section indicates no tools are currently available
 
 ### Requirement: Short-Term Memory
 
-The system SHALL store conversation history in D1.
+The system SHALL store conversation history in a D1 `messages` table with columns: `id` (nanoid, primary key), `chat_id`, `role` (`user` or `assistant`), `content`, and `created_at` (ISO 8601).
 
-The system SHALL include the most recent N messages (default: 20) in the LLM context for each invocation.
+The system SHALL include the most recent 20 messages for the chat in the LLM context for each invocation.
 
 #### Scenario: Recent messages included in context
 
 - **WHEN** the agent prepares an LLM invocation
 - **AND** there are more than 20 messages in the conversation
 - **THEN** only the most recent 20 messages are included in the LLM context
+
+#### Scenario: Messages saved after response
+
+- **WHEN** the agent completes a conversation turn
+- **THEN** both the user message and assistant response are saved to the `messages` table
+- **AND** each message has a unique nanoid, the chat ID, the appropriate role, and an ISO 8601 timestamp
 
 ### Requirement: Long-Term Memory
 
