@@ -8,6 +8,13 @@
       "when": 1772241888342,
       "tag": "0000_clumsy_mantis",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1772260215873,
+      "tag": "0001_amazing_vulcan",
+      "breakpoints": true
     }
   ]
 }

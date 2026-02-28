@@ -1,4 +1,4 @@
-import { index, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 export const messages = sqliteTable(
 	"messages",
@@ -13,3 +13,18 @@ export const messages = sqliteTable(
 		index("idx_messages_chat_created").on(table.chatId, table.createdAt),
 	],
 );
+
+export const pendingApprovals = sqliteTable("pending_approvals", {
+	id: text("id").primaryKey(),
+	chatId: text("chat_id").notNull(),
+	threadId: integer("thread_id"),
+	toolName: text("tool_name").notNull(),
+	toolInput: text("tool_input").notNull(),
+	status: text("status", {
+		enum: ["pending", "approved", "rejected", "expired"],
+	})
+		.notNull()
+		.default("pending"),
+	createdAt: text("created_at").notNull(),
+	expiresAt: text("expires_at").notNull(),
+});
