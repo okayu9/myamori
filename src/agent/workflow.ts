@@ -75,7 +75,7 @@ export class AgentWorkflow extends WorkflowEntrypoint<
 				"Sorry, I encountered an error processing your message. Please try again later.";
 		}
 
-		await step.do("send-reply", async () => {
+		await step.do("send-reply", { timeout: "30 seconds" }, async () => {
 			const url = `https://api.telegram.org/bot${this.env.TELEGRAM_BOT_TOKEN}/sendMessage`;
 			const body: Record<string, unknown> = {
 				chat_id: chatId,
@@ -88,6 +88,7 @@ export class AgentWorkflow extends WorkflowEntrypoint<
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify(body),
+				signal: AbortSignal.timeout(10_000),
 			});
 			const data: { ok: boolean; error_code?: number; description?: string } =
 				await response.json();
