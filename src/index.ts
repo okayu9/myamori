@@ -88,12 +88,16 @@ app.post("/telegram/webhook", async (c) => {
 		return c.json({ ok: true });
 	}
 
-	const rateLimitMax = c.env.RATE_LIMIT_MAX
+	const parsedMax = c.env.RATE_LIMIT_MAX
 		? Number.parseInt(c.env.RATE_LIMIT_MAX, 10)
 		: 20;
-	const rateLimitWindowMs = c.env.RATE_LIMIT_WINDOW_MS
+	const rateLimitMax = Number.isNaN(parsedMax) ? 20 : parsedMax;
+	const parsedWindow = c.env.RATE_LIMIT_WINDOW_MS
 		? Number.parseInt(c.env.RATE_LIMIT_WINDOW_MS, 10)
 		: 3_600_000;
+	const rateLimitWindowMs = Number.isNaN(parsedWindow)
+		? 3_600_000
+		: parsedWindow;
 	const rateLimit = await checkRateLimit(
 		c.env.RATE_LIMIT_KV,
 		message.userId,

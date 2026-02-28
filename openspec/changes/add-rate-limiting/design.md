@@ -9,7 +9,7 @@ The security spec requires KV-based per-user rate limiting for messages and LLM 
 - Enforce a per-user message rate limit using Cloudflare KV
 - Reject over-limit messages with a friendly Telegram reply
 - Make limits configurable via environment variables
-- Keep the implementation simple (single sliding window counter)
+- Keep the implementation simple (single fixed window counter)
 
 **Non-Goals:**
 

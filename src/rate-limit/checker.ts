@@ -13,7 +13,7 @@ export async function checkRateLimit(
 	const key = `ratelimit:${userId}:${windowKey}`;
 
 	const current = await kv.get(key);
-	const count = current ? Number.parseInt(current, 10) : 0;
+	const count = current ? Number.parseInt(current, 10) || 0 : 0;
 
 	if (count >= max) {
 		return { allowed: false, remaining: 0 };

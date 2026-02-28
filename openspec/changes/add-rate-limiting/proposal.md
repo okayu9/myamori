@@ -4,7 +4,7 @@ There is no cost protection — a runaway loop or excessive usage could burn thr
 
 ## What Changes
 
-- Add KV-based sliding window rate limiter for messages per user
+- Add KV-based fixed-window rate limiter for messages per user
 - Reject messages that exceed the rate limit with a Telegram reply
 - Add `RATE_LIMIT_KV` binding to the worker environment
 - Configurable limits via environment variables (messages per window, window duration)
