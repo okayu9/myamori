@@ -24,12 +24,17 @@ export function createWebSearchTool(apiKey: string) {
 		inputSchema,
 		riskLevel: "low",
 		execute: async (input) => {
+			const query = input.query.trim();
+			if (!query) {
+				throw new Error("Query must not be empty");
+			}
+
 			const response = await fetch("https://api.tavily.com/search", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({
 					api_key: apiKey,
-					query: input.query,
+					query,
 					max_results: 5,
 					include_answer: "advanced",
 				}),
@@ -42,11 +47,12 @@ export function createWebSearchTool(apiKey: string) {
 				);
 			}
 
-			const data: TavilyResponse = await response.json();
+			const data = (await response.json()) as Partial<TavilyResponse>;
+			const safeResults = Array.isArray(data.results) ? data.results : [];
 
 			return {
-				answer: data.answer ?? null,
-				results: data.results.map((r) => ({
+				answer: typeof data.answer === "string" ? data.answer : null,
+				results: safeResults.map((r) => ({
 					title: r.title,
 					url: r.url,
 					snippet: r.content,

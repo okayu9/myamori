@@ -22,7 +22,7 @@ export interface AgentWorkflowEnv {
 	ANTHROPIC_API_KEY: string;
 	ANTHROPIC_MODEL?: string;
 	TELEGRAM_BOT_TOKEN: string;
-	TAVILY_API_KEY: string;
+	TAVILY_API_KEY?: string;
 }
 
 export class AgentWorkflow extends WorkflowEntrypoint<
@@ -59,7 +59,9 @@ export class AgentWorkflow extends WorkflowEntrypoint<
 					const model = this.env.ANTHROPIC_MODEL ?? "claude-haiku-4-5";
 
 					const registry = new ToolRegistry();
-					registry.register(createWebSearchTool(this.env.TAVILY_API_KEY));
+					if (this.env.TAVILY_API_KEY?.trim()) {
+						registry.register(createWebSearchTool(this.env.TAVILY_API_KEY));
+					}
 
 					const result = await generateText({
 						model: anthropic(model),

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { createWebSearchTool } from "../../../src/tools/web-search";
 
 const mockTavilyResponse = {
@@ -18,6 +18,10 @@ const mockTavilyResponse = {
 		},
 	],
 };
+
+afterEach(() => {
+	vi.restoreAllMocks();
+});
 
 describe("createWebSearchTool", () => {
 	it("returns a tool with correct metadata", () => {
@@ -41,18 +45,27 @@ describe("createWebSearchTool", () => {
 		expect(missingResult.success).toBe(false);
 	});
 
+	it("rejects whitespace-only queries", async () => {
+		const tool = createWebSearchTool("key");
+
+		await expect(tool.execute({ query: "   " })).rejects.toThrow(
+			/Query must not be empty/,
+		);
+	});
+
 	it("calls Tavily API and returns structured results", async () => {
-		const fetchSpy = vi
-			.spyOn(globalThis, "fetch")
-			.mockResolvedValueOnce(
-				new Response(JSON.stringify(mockTavilyResponse), { status: 200 }),
-			);
+		vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+			new Response(JSON.stringify(mockTavilyResponse), { status: 200 }),
+		);
 
 		const tool = createWebSearchTool("my-api-key");
 		const result = await tool.execute({ query: "what is typescript" });
 
-		expect(fetchSpy).toHaveBeenCalledOnce();
-		const [url, options] = fetchSpy.mock.calls[0] as [string, RequestInit];
+		expect(globalThis.fetch).toHaveBeenCalledOnce();
+		const [url, options] = vi.mocked(globalThis.fetch).mock.calls[0] as [
+			string,
+			RequestInit,
+		];
 		expect(url).toBe("https://api.tavily.com/search");
 		expect(options.method).toBe("POST");
 
@@ -79,16 +92,12 @@ describe("createWebSearchTool", () => {
 				},
 			],
 		});
-
-		fetchSpy.mockRestore();
 	});
 
 	it("returns null answer when Tavily omits it", async () => {
-		const fetchSpy = vi
-			.spyOn(globalThis, "fetch")
-			.mockResolvedValueOnce(
-				new Response(JSON.stringify({ results: [] }), { status: 200 }),
-			);
+		vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+			new Response(JSON.stringify({ results: [] }), { status: 200 }),
+		);
 
 		const tool = createWebSearchTool("key");
 		const result = (await tool.execute({ query: "test" })) as {
@@ -98,12 +107,25 @@ describe("createWebSearchTool", () => {
 
 		expect(result.answer).toBeNull();
 		expect(result.results).toEqual([]);
+	});
 
-		fetchSpy.mockRestore();
+	it("handles malformed Tavily response gracefully", async () => {
+		vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+			new Response(JSON.stringify({ unexpected: true }), { status: 200 }),
+		);
+
+		const tool = createWebSearchTool("key");
+		const result = (await tool.execute({ query: "test" })) as {
+			answer: string | null;
+			results: unknown[];
+		};
+
+		expect(result.answer).toBeNull();
+		expect(result.results).toEqual([]);
 	});
 
 	it("throws on non-OK HTTP response", async () => {
-		const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+		vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
 			new Response("Unauthorized", {
 				status: 401,
 				statusText: "Unauthorized",
@@ -115,7 +137,5 @@ describe("createWebSearchTool", () => {
 		await expect(tool.execute({ query: "test" })).rejects.toThrow(
 			/Tavily API error: 401/,
 		);
-
-		fetchSpy.mockRestore();
 	});
 });
