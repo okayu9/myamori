@@ -32,7 +32,7 @@ This change implements the minimal text-response path only. Tool calls, approval
 
 Use Cloudflare Workflows instead of `waitUntil` or Queues. The webhook handler dispatches a Workflow instance; each step runs independently with its own timeout and retry.
 
-```
+```text
 Telegram → fetch() handler → env.AGENT_WORKFLOW.create(params) → 200 OK
            (数ms で完了、Telegram に即応答)
 
@@ -67,7 +67,7 @@ Store model ID in `ANTHROPIC_MODEL` environment variable, defaulting to `claude-
 Create a `messages` table in D1 to store conversation turns. Load the most recent 20 messages per chat as context for each LLM call.
 
 Schema:
-```
+```text
 messages:
   id          TEXT PRIMARY KEY (nanoid)
   chat_id     TEXT NOT NULL
@@ -91,7 +91,7 @@ Comma-separated Telegram user IDs stored as a Cloudflare secret. Checked in the 
 
 ### 5. Module Structure
 
-```
+```text
 src/
   agent/
     workflow.ts     — WorkflowEntrypoint with step definitions

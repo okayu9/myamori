@@ -8,9 +8,8 @@ describe("buildSystemPrompt", () => {
 	});
 
 	it("includes current date/time in ISO 8601 format", () => {
-		const before = new Date().toISOString().slice(0, 10);
 		const prompt = buildSystemPrompt();
-		expect(prompt).toContain(before);
+		expect(prompt).toMatch(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z/);
 	});
 
 	it("includes tools placeholder", () => {

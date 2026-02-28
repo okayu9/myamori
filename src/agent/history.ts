@@ -27,21 +27,22 @@ export async function saveMessages(
 	userContent: string,
 	assistantContent: string,
 ) {
-	const now = new Date().toISOString();
+	const userAt = new Date();
+	const assistantAt = new Date(userAt.getTime() + 1);
 	await db.insert(messages).values([
 		{
 			id: nanoid(),
 			chatId,
 			role: "user" as const,
 			content: userContent,
-			createdAt: now,
+			createdAt: userAt.toISOString(),
 		},
 		{
 			id: nanoid(),
 			chatId,
 			role: "assistant" as const,
 			content: assistantContent,
-			createdAt: now,
+			createdAt: assistantAt.toISOString(),
 		},
 	]);
 }

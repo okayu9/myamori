@@ -13,13 +13,13 @@ export interface AgentWorkflowParams {
 	chatId: string;
 	userMessage: string;
 	threadId?: number;
-	botToken: string;
 }
 
 export interface AgentWorkflowEnv {
 	DB: D1Database;
 	ANTHROPIC_API_KEY: string;
 	ANTHROPIC_MODEL?: string;
+	TELEGRAM_BOT_TOKEN: string;
 }
 
 export class AgentWorkflow extends WorkflowEntrypoint<
@@ -30,7 +30,7 @@ export class AgentWorkflow extends WorkflowEntrypoint<
 		event: WorkflowEvent<AgentWorkflowParams>,
 		step: WorkflowStep,
 	) {
-		const { chatId, userMessage, threadId, botToken } = event.payload;
+		const { chatId, userMessage, threadId } = event.payload;
 
 		const history = await step.do("load-history", async () => {
 			const db = createDb(this.env.DB);
@@ -76,7 +76,7 @@ export class AgentWorkflow extends WorkflowEntrypoint<
 		}
 
 		await step.do("send-reply", async () => {
-			const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
+			const url = `https://api.telegram.org/bot${this.env.TELEGRAM_BOT_TOKEN}/sendMessage`;
 			const body: Record<string, unknown> = {
 				chat_id: chatId,
 				text: replyText,

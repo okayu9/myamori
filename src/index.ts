@@ -41,7 +41,6 @@ app.post("/telegram/webhook", async (c) => {
 			chatId: message.chatId,
 			userMessage: message.text,
 			threadId: message.threadId,
-			botToken: c.env.TELEGRAM_BOT_TOKEN,
 		},
 	});
 
