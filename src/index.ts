@@ -18,6 +18,10 @@ type Bindings = {
 	TAVILY_API_KEY?: string;
 	RATE_LIMIT_MAX?: string;
 	RATE_LIMIT_WINDOW_MS?: string;
+	CALDAV_URL?: string;
+	CALDAV_USERNAME?: string;
+	CALDAV_PASSWORD?: string;
+	CALDAV_CALENDAR_NAME?: string;
 	AGENT_WORKFLOW: Workflow<AgentWorkflowParams>;
 	DB: D1Database;
 	RATE_LIMIT_KV: KVNamespace;

@@ -9,6 +9,8 @@ import { createApproval } from "../approval/handler";
 import { logLLMCall, logToolExecution } from "../audit/logger";
 import { TelegramAdapter } from "../channels/telegram";
 import { createDb } from "../db";
+import { createCalendarTools } from "../tools/calendar";
+import { createCalendarClient } from "../tools/calendar-client";
 import { ToolRegistry } from "../tools/registry";
 import { createWebSearchTool } from "../tools/web-search";
 import { loadHistory, saveMessages } from "./history";
@@ -26,6 +28,10 @@ export interface AgentWorkflowEnv {
 	ANTHROPIC_MODEL?: string;
 	TELEGRAM_BOT_TOKEN: string;
 	TAVILY_API_KEY?: string;
+	CALDAV_URL?: string;
+	CALDAV_USERNAME?: string;
+	CALDAV_PASSWORD?: string;
+	CALDAV_CALENDAR_NAME?: string;
 }
 
 export class AgentWorkflow extends WorkflowEntrypoint<
@@ -64,6 +70,18 @@ export class AgentWorkflow extends WorkflowEntrypoint<
 					const registry = new ToolRegistry();
 					if (this.env.TAVILY_API_KEY?.trim()) {
 						registry.register(createWebSearchTool(this.env.TAVILY_API_KEY));
+					}
+					if (this.env.CALDAV_URL?.trim()) {
+						const calClient = await createCalendarClient({
+							CALDAV_URL: this.env.CALDAV_URL,
+							CALDAV_USERNAME: this.env.CALDAV_USERNAME ?? "",
+							CALDAV_PASSWORD: this.env.CALDAV_PASSWORD ?? "",
+							CALDAV_CALENDAR_NAME: this.env.CALDAV_CALENDAR_NAME,
+						});
+						const calDb = createDb(this.env.DB);
+						for (const tool of createCalendarTools(calClient, calDb)) {
+							registry.register(tool);
+						}
 					}
 
 					const llmStart = Date.now();
