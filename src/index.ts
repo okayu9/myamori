@@ -32,8 +32,12 @@ app.post("/telegram/webhook", async (c) => {
 		return c.text("Unauthorized", 401);
 	}
 
-	// Clone the request so we can read the body twice (once for callback, once for message)
-	const body = await c.req.json();
+	let body: unknown;
+	try {
+		body = await c.req.json();
+	} catch {
+		return c.json({ ok: true });
+	}
 	const parsed = telegramUpdateSchema.safeParse(body);
 	if (!parsed.success) {
 		return c.json({ ok: true });
@@ -127,6 +131,11 @@ async function handleCallbackQuery(
 		return;
 	}
 
+	if (result === "not_found") {
+		await adapter.answerCallbackQuery(callbackQueryId, "Approval not found");
+		return;
+	}
+
 	if (result === "already_resolved") {
 		await adapter.answerCallbackQuery(callbackQueryId, "Already resolved");
 		return;
@@ -157,8 +166,17 @@ async function handleCallbackQuery(
 			return;
 		}
 
-		const toolInput = JSON.parse(approval.toolInput);
-		const toolResult = await toolDef.execute(toolInput);
+		const toolInputRaw: unknown = JSON.parse(approval.toolInput);
+		const parsedInput = toolDef.inputSchema.safeParse(toolInputRaw);
+		if (!parsedInput.success) {
+			await adapter.sendReply(
+				approval.chatId,
+				`❌ Invalid stored input for ${approval.toolName}`,
+				approval.threadId ?? undefined,
+			);
+			return;
+		}
+		const toolResult = await toolDef.execute(parsedInput.data);
 		await adapter.sendReply(
 			approval.chatId,
 			`✅ ${approval.toolName} executed:\n\n${JSON.stringify(toolResult, null, 2)}`,

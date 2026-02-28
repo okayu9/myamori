@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import type { createDb } from "../db";
 import { pendingApprovals } from "../db/schema";
@@ -77,14 +77,24 @@ export async function resolveApproval(
 		await db
 			.update(pendingApprovals)
 			.set({ status: "expired" })
-			.where(eq(pendingApprovals.id, approvalId));
+			.where(
+				and(
+					eq(pendingApprovals.id, approvalId),
+					eq(pendingApprovals.status, "pending"),
+				),
+			);
 		return "expired";
 	}
 
 	const result = await db
 		.update(pendingApprovals)
 		.set({ status: action })
-		.where(eq(pendingApprovals.id, approvalId))
+		.where(
+			and(
+				eq(pendingApprovals.id, approvalId),
+				eq(pendingApprovals.status, "pending"),
+			),
+		)
 		.returning({ id: pendingApprovals.id });
 
 	return result.length > 0 ? "resolved" : "already_resolved";

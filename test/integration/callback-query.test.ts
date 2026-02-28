@@ -1,6 +1,6 @@
 import { env, SELF } from "cloudflare:test";
 import { describe, expect, it } from "vitest";
-import { createApproval } from "../../src/approval/handler";
+import { createApproval, getApproval } from "../../src/approval/handler";
 import { createDb } from "../../src/db";
 import "../../src/index";
 
@@ -68,5 +68,9 @@ describe("POST /telegram/webhook - callback_query", () => {
 		// The handler tries to call Telegram API which will fail in test,
 		// but the webhook should still return 200 (errors are handled internally)
 		expect(response.status).toBe(200);
+
+		// Verify the approval status was actually updated
+		const approval = await getApproval(db, approvalId);
+		expect(approval?.status).toBe("rejected");
 	});
 });

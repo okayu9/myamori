@@ -30,7 +30,7 @@
 - [x] 6.1 Unit tests for approval handler (create, resolve, expiry, double-click)
 - [x] 6.2 Unit tests for Telegram inline keyboard and callback query parsing
 - [x] 6.3 Unit tests for registry `onHighRisk` callback integration
-- [x] 6.4 Integration test for callback query webhook flow (approve → execute)
+- [x] 6.4 Integration test for callback query webhook flow (reject path, allowlist check)
 
 ## 7. Verification
 

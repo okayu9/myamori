@@ -28,6 +28,6 @@ _None — approval flow is already defined in the `security` spec._
 - `src/approval/handler.ts`: new module for creating and resolving approvals
 - `src/tools/registry.ts`: accept approval callback, replace placeholder rejection
 - `src/index.ts`: handle `callback_query` in Telegram webhook
-- `src/channels/telegram.ts`: add `sendMessageWithButtons` and `answerCallbackQuery` methods
+- `src/channels/telegram.ts`: add `sendMessageWithInlineKeyboard` and `answerCallbackQuery` methods
 - `drizzle/migrations/`: new migration for `pending_approvals` table
 - Dependencies: none (uses existing D1 + Telegram Bot API)

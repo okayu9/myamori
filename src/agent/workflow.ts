@@ -77,36 +77,44 @@ export class AgentWorkflow extends WorkflowEntrypoint<
 						],
 						tools: registry.toAISDKTools({
 							onHighRisk: async (toolName, input) => {
-								const db = createDb(this.env.DB);
-								const approvalId = await createApproval(db, {
-									chatId,
-									threadId,
-									toolName,
-									toolInput: input,
-								});
+								try {
+									const db = createDb(this.env.DB);
+									const approvalId = await createApproval(db, {
+										chatId,
+										threadId,
+										toolName,
+										toolInput: input,
+									});
 
-								const telegram = new TelegramAdapter(
-									this.env.TELEGRAM_BOT_TOKEN,
-									"",
-								);
-								const preview = `🔒 Approval required: ${toolName}\n\nInput: ${JSON.stringify(input, null, 2)}`;
-								await telegram.sendMessageWithInlineKeyboard(
-									chatId,
-									preview,
-									[
-										{
-											text: "✅ Approve",
-											callbackData: `approve:${approvalId}`,
-										},
-										{
-											text: "❌ Reject",
-											callbackData: `reject:${approvalId}`,
-										},
-									],
-									threadId,
-								);
+									const telegram = new TelegramAdapter(
+										this.env.TELEGRAM_BOT_TOKEN,
+										"",
+									);
+									const preview = `🔒 Approval required: ${toolName}\n\nInput: ${JSON.stringify(input, null, 2)}`;
+									await telegram.sendMessageWithInlineKeyboard(
+										chatId,
+										preview,
+										[
+											{
+												text: "✅ Approve",
+												callbackData: `approve:${approvalId}`,
+											},
+											{
+												text: "❌ Reject",
+												callbackData: `reject:${approvalId}`,
+											},
+										],
+										threadId,
+									);
 
-								return `Approval requested for ${toolName}. The user will see an Approve/Reject button in Telegram.`;
+									return `Approval requested for ${toolName}. The user will see an Approve/Reject button in Telegram.`;
+								} catch (error) {
+									console.error(
+										`Failed to request approval for ${toolName}:`,
+										error,
+									);
+									return `Unable to request approval for ${toolName} right now. Please retry.`;
+								}
 							},
 						}),
 						stopWhen: stepCountIs(5),

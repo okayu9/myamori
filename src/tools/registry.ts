@@ -46,7 +46,7 @@ function createGatedExecute(
 				return await options.onHighRisk(def.name, input);
 			}
 			throw new Error(
-				"This action requires approval which is not yet implemented",
+				"This action requires approval. Configure ToolRegistryOptions.onHighRisk to handle high-risk tools.",
 			);
 		}
 		return await def.execute(input);
