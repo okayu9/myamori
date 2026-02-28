@@ -98,12 +98,18 @@ app.post("/telegram/webhook", async (c) => {
 	const rateLimitWindowMs = Number.isNaN(parsedWindow)
 		? 3_600_000
 		: parsedWindow;
-	const rateLimit = await checkRateLimit(
-		c.env.RATE_LIMIT_KV,
-		message.userId,
-		rateLimitMax,
-		rateLimitWindowMs,
-	);
+	let rateLimit: { allowed: boolean; remaining: number };
+	try {
+		rateLimit = await checkRateLimit(
+			c.env.RATE_LIMIT_KV,
+			message.userId,
+			rateLimitMax,
+			rateLimitWindowMs,
+		);
+	} catch (error) {
+		console.error("Rate limit check failed, allowing request:", error);
+		rateLimit = { allowed: true, remaining: 0 };
+	}
 	if (!rateLimit.allowed) {
 		try {
 			await adapter.sendReply(
