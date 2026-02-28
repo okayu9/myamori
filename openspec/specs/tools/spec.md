@@ -29,7 +29,7 @@ The system SHALL classify tools into three risk levels:
 
 - **`low`**: Execute immediately. The tool runs and returns its result to the LLM.
 - **`medium`**: Execute immediately. The system prompt instructs the LLM to report the action in its reply.
-- **`high`**: Reject execution with an error message. The LLM receives a message indicating approval is required but not yet implemented.
+- **`high`**: Request approval. The tool saves a pending approval to D1, sends an inline keyboard to Telegram, and returns a message to the LLM indicating approval has been requested.
 
 #### Scenario: Low-risk tool executed immediately
 
@@ -42,11 +42,12 @@ The system SHALL classify tools into three risk levels:
 - **THEN** it executes immediately and returns the result
 - **AND** the LLM is instructed via system prompt to report the action in its reply
 
-#### Scenario: High-risk tool rejected
+#### Scenario: High-risk tool requests approval
 
 - **WHEN** a tool with risk level `high` is invoked by the LLM
-- **THEN** execution is rejected with an error message
-- **AND** the LLM receives "This action requires approval which is not yet implemented"
+- **THEN** the pending operation is saved to D1
+- **AND** an inline keyboard message is sent to Telegram
+- **AND** the tool returns a message to the LLM indicating approval has been requested
 
 ### Requirement: Forwarded Email Reader — Design Rationale
 
