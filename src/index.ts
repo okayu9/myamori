@@ -155,29 +155,30 @@ async function handleCallbackQuery(
 	// Approved — execute the tool
 	await adapter.answerCallbackQuery(callbackQueryId, "Approved! Executing...");
 
-	try {
-		const registry = buildToolRegistry(env);
-		const toolDef = registry.getByName(approval.toolName);
-		if (!toolDef) {
-			await adapter.sendReply(
-				approval.chatId,
-				`❌ Error: Tool "${approval.toolName}" not found`,
-				approval.threadId ?? undefined,
-			);
-			return;
-		}
+	const registry = buildToolRegistry(env);
+	const toolDef = registry.getByName(approval.toolName);
+	if (!toolDef) {
+		await adapter.sendReply(
+			approval.chatId,
+			`❌ Error: Tool "${approval.toolName}" not found`,
+			approval.threadId ?? undefined,
+		);
+		return;
+	}
 
-		const toolInputRaw: unknown = JSON.parse(approval.toolInput);
-		const parsedInput = toolDef.inputSchema.safeParse(toolInputRaw);
-		if (!parsedInput.success) {
-			await adapter.sendReply(
-				approval.chatId,
-				`❌ Invalid stored input for ${approval.toolName}`,
-				approval.threadId ?? undefined,
-			);
-			return;
-		}
-		const toolStart = Date.now();
+	const toolInputRaw: unknown = JSON.parse(approval.toolInput);
+	const parsedInput = toolDef.inputSchema.safeParse(toolInputRaw);
+	if (!parsedInput.success) {
+		await adapter.sendReply(
+			approval.chatId,
+			`❌ Invalid stored input for ${approval.toolName}`,
+			approval.threadId ?? undefined,
+		);
+		return;
+	}
+
+	const toolStart = Date.now();
+	try {
 		const toolResult = await toolDef.execute(parsedInput.data);
 		await logToolExecution(db, {
 			chatId: approval.chatId,
@@ -197,8 +198,8 @@ async function handleCallbackQuery(
 			chatId: approval.chatId,
 			toolName: approval.toolName,
 			status: "error",
-			input: approval.toolInput,
-			durationMs: 0,
+			input: parsedInput.data,
+			durationMs: Date.now() - toolStart,
 		});
 		await adapter.sendReply(
 			approval.chatId,

@@ -111,6 +111,7 @@ describe("audit logger", () => {
 				.where(eq(auditLogs.chatId, "chat-3"));
 			const metadata = JSON.parse((rows[0] ?? { metadata: "{}" }).metadata);
 			expect(metadata.inputSummary.length).toBe(200);
+			expect(metadata.inputSummary).toMatch(/\.\.\.$/);
 		});
 
 		it("records error status", async () => {

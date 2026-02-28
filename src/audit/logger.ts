@@ -24,7 +24,15 @@ export interface LogToolExecutionParams {
 
 function truncate(value: string, maxLength: number): string {
 	if (value.length <= maxLength) return value;
-	return value.slice(0, maxLength);
+	return `${value.slice(0, maxLength - 3)}...`;
+}
+
+function safeStringify(value: unknown): string {
+	try {
+		return JSON.stringify(value);
+	} catch {
+		return "[Unserializable input]";
+	}
 }
 
 export async function logLLMCall(
@@ -55,7 +63,7 @@ export async function logToolExecution(
 ): Promise<void> {
 	try {
 		const inputSummary = truncate(
-			JSON.stringify(params.input),
+			safeStringify(params.input),
 			INPUT_SUMMARY_MAX_LENGTH,
 		);
 		await db.insert(auditLogs).values({
