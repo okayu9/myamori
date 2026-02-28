@@ -7,7 +7,7 @@ The agent SHALL process each incoming message through the following steps in ord
 1. Verify the user is in the allowlist (in the webhook handler, before dispatching).
 2. Dispatch a Cloudflare Workflow instance for the message.
 3. In the Workflow, retrieve recent conversation history from D1.
-4. Build the system prompt with tool descriptions and call the LLM via Vercel AI SDK with registered tools and `maxSteps` for agentic looping.
+4. Build the system prompt with tool descriptions and call the LLM via Vercel AI SDK with registered tools and `stopWhen: stepCountIs(5)` for agentic looping.
 5. If the LLM returns a text response, send it to the user via Telegram.
 6. If the LLM requests a tool call, the AI SDK executes it automatically and feeds the result back to the LLM (up to the Tool Call Limit).
 7. Save the user message and assistant response to D1.
@@ -48,7 +48,7 @@ Tool calls, approval flow, audit logging, and long-term memory retrieval are def
 
 ### Requirement: Tool Call Limit
 
-The agent SHALL enforce a maximum of 5 tool call steps per conversation turn via the `maxSteps` parameter in `generateText`.
+The agent SHALL enforce a maximum of 5 tool call steps per conversation turn via `stopWhen: stepCountIs(5)` in `generateText`.
 
 When the limit is reached, the LLM's last response (text or partial) is sent to the user.
 

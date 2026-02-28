@@ -4,7 +4,7 @@
 
 Every tool SHALL be defined with a Zod schema for input validation, a description, and an explicit risk level.
 
-The tool framework SHALL provide a `ToolRegistry` for registering and looking up tools by name.
+The tool framework SHALL provide a `ToolRegistry` for registering tools and converting them to AI SDK format.
 
 The registry SHALL convert tool definitions to Vercel AI SDK `tool()` format for use with `generateText`.
 

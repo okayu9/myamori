@@ -1,6 +1,6 @@
 ## Context
 
-The agent loop processes text messages end-to-end (allowlist → history → LLM → reply → save). The next step is enabling the LLM to call tools. The Vercel AI SDK already supports tool calls via `generateText` with `maxSteps`, so the framework builds on top of that.
+The agent loop processes text messages end-to-end (allowlist → history → LLM → reply → save). The next step is enabling the LLM to call tools. The Vercel AI SDK already supports tool calls via `generateText` with `stopWhen`, so the framework builds on top of that.
 
 This change implements the tool framework only. No concrete tools (email, files, calendar) are registered yet. High-risk approval flow is deferred.
 
@@ -10,7 +10,7 @@ This change implements the tool framework only. No concrete tools (email, files,
 
 - Define a `ToolDefinition` interface with Zod schemas and risk levels
 - Create a tool registry to register/lookup tools
-- Integrate tools into the agent Workflow using Vercel AI SDK's `maxSteps` for agentic looping
+- Integrate tools into the agent Workflow using Vercel AI SDK's `stopWhen` for agentic looping
 - Enforce Tool Call Limit (default: 5 steps)
 - Handle risk levels: `low` executes immediately, `medium` executes and flags for reporting, `high` returns an error (approval flow deferred)
 - Update system prompt to include tool descriptions dynamically
@@ -25,7 +25,7 @@ This change implements the tool framework only. No concrete tools (email, files,
 
 ### 1. Leverage Vercel AI SDK's native tool support
 
-Use the AI SDK's `tool()` helper and `maxSteps` parameter instead of building a custom agentic loop. The SDK handles:
+Use the AI SDK's `tool()` helper and `stopWhen` parameter instead of building a custom agentic loop. The SDK handles:
 - Tool call parsing from LLM response
 - Feeding tool results back to the LLM
 - Multi-step looping until text response or step limit
@@ -36,7 +36,7 @@ const result = await generateText({
   system: buildSystemPrompt(tools),
   messages: history,
   tools: convertToAISDKTools(registry),
-  maxSteps: 5,
+  stopWhen: stepCountIs(5),
 });
 ```
 
@@ -109,13 +109,13 @@ src/
 
 ### 7. Workflow changes
 
-The `call-llm` step changes from `generateText` (single call) to `generateText` with `tools` and `maxSteps: 5`. The step timeout (5 min) accommodates multiple LLM round-trips.
+The `call-llm` step changes from `generateText` (single call) to `generateText` with `tools` and `stopWhen: stepCountIs(5)`. The step timeout (5 min) accommodates multiple LLM round-trips.
 
 The step result changes from a plain string to the full `generateText` result, from which we extract `result.text` for the reply.
 
 ## Risks / Trade-offs
 
-- **[maxSteps timeout]** Multiple tool calls within a single Workflow step could approach the 5-minute timeout. → Acceptable: even 5 sequential LLM calls at ~30s each fit within 5 minutes. If needed, timeout can be increased per step.
+- **[stopWhen timeout]** Multiple tool calls within a single Workflow step could approach the 5-minute timeout. → Acceptable: even 5 sequential LLM calls at ~30s each fit within 5 minutes. If needed, timeout can be increased per step.
 - **[No output validation]** Tool results are not validated against an output schema. → Acceptable for now; the LLM handles arbitrary JSON. Can be added when audit logging needs structured output.
 - **[Medium-risk reporting via prompt]** Medium-risk tools rely on the system prompt instructing the LLM to mention the action in its reply, rather than a programmatic flag. → Acceptable: the LLM reliably follows system prompt instructions for reporting. A structured approach can be added later.
 - **[High-risk error message]** High-risk tools throw an error that the LLM sees. The LLM may attempt to retry or work around it. → Mitigated: the error message is clear and the LLM should inform the user. The Tool Call Limit (5) prevents infinite retry loops.

@@ -5,6 +5,9 @@ export class ToolRegistry {
 	private tools = new Map<string, ToolDefinition>();
 
 	register(definition: ToolDefinition): void {
+		if (this.tools.has(definition.name)) {
+			throw new Error(`Duplicate tool registration: ${definition.name}`);
+		}
 		this.tools.set(definition.name, definition);
 	}
 
@@ -29,7 +32,7 @@ function createGatedExecute(def: ToolDefinition) {
 	return async (input: unknown) => {
 		if (def.riskLevel === "high") {
 			throw new Error(
-				`Tool "${def.name}" requires approval which is not yet implemented. Please inform the user that this action cannot be performed yet.`,
+				"This action requires approval which is not yet implemented",
 			);
 		}
 		return await def.execute(input);

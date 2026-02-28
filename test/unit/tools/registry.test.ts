@@ -40,14 +40,13 @@ describe("ToolRegistry", () => {
 		expect(registry.getAll()).toEqual([]);
 	});
 
-	it("overwrites tool with same name", () => {
+	it("throws on duplicate tool name", () => {
 		const registry = new ToolRegistry();
-		registry.register(createTool({ name: "dup", description: "first" }));
-		registry.register(createTool({ name: "dup", description: "second" }));
+		registry.register(createTool({ name: "dup" }));
 
-		const all = registry.getAll();
-		expect(all).toHaveLength(1);
-		expect(all[0]?.description).toBe("second");
+		expect(() => registry.register(createTool({ name: "dup" }))).toThrow(
+			/Duplicate tool registration: dup/,
+		);
 	});
 
 	it("converts to AI SDK tools format", () => {
