@@ -5,6 +5,7 @@ import { logToolExecution } from "./audit/logger";
 import { TelegramAdapter } from "./channels/telegram";
 import { telegramUpdateSchema } from "./channels/telegram-schema";
 import { createDb } from "./db";
+import { checkRateLimit } from "./rate-limit/checker";
 import { ToolRegistry } from "./tools/registry";
 import { createWebSearchTool } from "./tools/web-search";
 
@@ -15,8 +16,11 @@ type Bindings = {
 	ANTHROPIC_API_KEY: string;
 	ANTHROPIC_MODEL?: string;
 	TAVILY_API_KEY?: string;
+	RATE_LIMIT_MAX?: string;
+	RATE_LIMIT_WINDOW_MS?: string;
 	AGENT_WORKFLOW: Workflow<AgentWorkflowParams>;
 	DB: D1Database;
+	RATE_LIMIT_KV: KVNamespace;
 };
 
 const app = new Hono<{ Bindings: Bindings }>();
@@ -81,6 +85,31 @@ app.post("/telegram/webhook", async (c) => {
 
 	const allowedIds = c.env.ALLOWED_USER_IDS.split(",").map((id) => id.trim());
 	if (!allowedIds.includes(message.userId)) {
+		return c.json({ ok: true });
+	}
+
+	const rateLimitMax = c.env.RATE_LIMIT_MAX
+		? Number.parseInt(c.env.RATE_LIMIT_MAX, 10)
+		: 20;
+	const rateLimitWindowMs = c.env.RATE_LIMIT_WINDOW_MS
+		? Number.parseInt(c.env.RATE_LIMIT_WINDOW_MS, 10)
+		: 3_600_000;
+	const rateLimit = await checkRateLimit(
+		c.env.RATE_LIMIT_KV,
+		message.userId,
+		rateLimitMax,
+		rateLimitWindowMs,
+	);
+	if (!rateLimit.allowed) {
+		try {
+			await adapter.sendReply(
+				message.chatId,
+				"You've reached the message limit. Please try again later.",
+				message.threadId ?? undefined,
+			);
+		} catch (error) {
+			console.error("Failed to send rate limit reply:", error);
+		}
 		return c.json({ ok: true });
 	}
 
