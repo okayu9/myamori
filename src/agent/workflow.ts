@@ -26,7 +26,10 @@ export class AgentWorkflow extends WorkflowEntrypoint<
 	AgentWorkflowEnv,
 	AgentWorkflowParams
 > {
-	override async run(event: WorkflowEvent<AgentWorkflowParams>, step: WorkflowStep) {
+	override async run(
+		event: WorkflowEvent<AgentWorkflowParams>,
+		step: WorkflowStep,
+	) {
 		const { chatId, userMessage, threadId, botToken } = event.payload;
 
 		const history = await step.do("load-history", async () => {
