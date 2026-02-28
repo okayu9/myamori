@@ -6,6 +6,7 @@ import {
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { generateText, stepCountIs } from "ai";
 import { createApproval } from "../approval/handler";
+import { logLLMCall, logToolExecution } from "../audit/logger";
 import { TelegramAdapter } from "../channels/telegram";
 import { createDb } from "../db";
 import { ToolRegistry } from "../tools/registry";
@@ -65,6 +66,7 @@ export class AgentWorkflow extends WorkflowEntrypoint<
 						registry.register(createWebSearchTool(this.env.TAVILY_API_KEY));
 					}
 
+					const llmStart = Date.now();
 					const result = await generateText({
 						model: anthropic(model),
 						system: buildSystemPrompt(registry.getAll()),
@@ -76,6 +78,16 @@ export class AgentWorkflow extends WorkflowEntrypoint<
 							{ role: "user" as const, content: userMessage },
 						],
 						tools: registry.toAISDKTools({
+							onToolExecuted: async (log) => {
+								const toolDb = createDb(this.env.DB);
+								await logToolExecution(toolDb, {
+									chatId,
+									toolName: log.toolName,
+									status: log.status,
+									input: log.input,
+									durationMs: log.durationMs,
+								});
+							},
 							onHighRisk: async (toolName, input) => {
 								try {
 									const db = createDb(this.env.DB);
@@ -118,6 +130,15 @@ export class AgentWorkflow extends WorkflowEntrypoint<
 							},
 						}),
 						stopWhen: stepCountIs(5),
+					});
+
+					const llmDb = createDb(this.env.DB);
+					await logLLMCall(llmDb, {
+						chatId,
+						model,
+						promptTokens: result.usage?.inputTokens ?? 0,
+						completionTokens: result.usage?.outputTokens ?? 0,
+						durationMs: Date.now() - llmStart,
 					});
 
 					return result.text;

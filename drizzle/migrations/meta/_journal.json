@@ -15,6 +15,13 @@
       "when": 1772260215873,
       "tag": "0001_amazing_vulcan",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1772279583546,
+      "tag": "0002_worthless_korvac",
+      "breakpoints": true
     }
   ]
 }
