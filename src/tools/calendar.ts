@@ -1,10 +1,11 @@
 import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { z } from "zod";
-import { createDb } from "../db";
+import type { createDb } from "../db";
 import { calendarUids } from "../db/schema";
 
 type Db = ReturnType<typeof createDb>;
+
 import type { CalendarClient } from "./calendar-client";
 import type { ToolDefinition } from "./types";
 import { defineTool } from "./types";
@@ -79,6 +80,14 @@ function extractPropertyWithParams(
 		params: raw.slice(0, lastColon),
 		value: raw.slice(lastColon + 1).trim(),
 	};
+}
+
+function escapeICalText(text: string): string {
+	return text
+		.replace(/\\/g, "\\\\")
+		.replace(/;/g, "\\;")
+		.replace(/,/g, "\\,")
+		.replace(/\n/g, "\\n");
 }
 
 function formatDateTime(value: string, allDay: boolean): string {
@@ -237,7 +246,7 @@ export function createCalendarTools(
 				`DTSTAMP:${now}`,
 				dtstart,
 				dtend,
-				`SUMMARY:${input.title}`,
+				`SUMMARY:${escapeICalText(input.title)}`,
 				"END:VEVENT",
 				"END:VCALENDAR",
 			].join("\r\n");
@@ -320,7 +329,7 @@ export function createCalendarTools(
 				`DTSTAMP:${now}`,
 				dtstart,
 				dtend,
-				`SUMMARY:${title}`,
+				`SUMMARY:${escapeICalText(title)}`,
 				"END:VEVENT",
 				"END:VCALENDAR",
 			].join("\r\n");

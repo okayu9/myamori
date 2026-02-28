@@ -219,6 +219,84 @@ describe("calendar tools", () => {
 		});
 	});
 
+	describe("update_event", () => {
+		it("updates an existing event", async () => {
+			const db = getDb();
+			const mockClient = createMockClient([
+				{
+					data: makeICalEvent({
+						uid: "upd-evt-1",
+						summary: "Original Title",
+						dtstart: "20250310T100000Z",
+						dtend: "20250310T110000Z",
+					}),
+					url: "/cal/upd-evt-1.ics",
+					etag: '"etag-upd"',
+				},
+			]);
+			const tools = createCalendarTools(mockClient, db);
+			const tool = tools.find((t) => t.name === "update_event");
+			expect(tool).toBeDefined();
+
+			const result = (await tool?.execute({
+				uid: "upd-evt-1",
+				title: "Updated Title",
+				startTime: "2025-03-10T14:00:00Z",
+				endTime: "2025-03-10T15:00:00Z",
+			})) as { uid: string; updated: boolean };
+
+			expect(result.updated).toBe(true);
+			expect(result.uid).toBe("upd-evt-1");
+			expect(mockClient.davClient.updateCalendarObject).toHaveBeenCalled();
+		});
+
+		it("throws when event UID is not found", async () => {
+			const db = getDb();
+			const mockClient = createMockClient([]);
+			const tools = createCalendarTools(mockClient, db);
+			const tool = tools.find((t) => t.name === "update_event");
+
+			await expect(
+				tool?.execute({ uid: "nonexistent-uid", title: "New Title" }),
+			).rejects.toThrow('Event with UID "nonexistent-uid" not found');
+		});
+
+		it("applies partial update (title only)", async () => {
+			const db = getDb();
+			const mockClient = createMockClient([
+				{
+					data: makeICalEvent({
+						uid: "partial-evt-1",
+						summary: "Old Title",
+						dtstart: "20250311T090000Z",
+						dtend: "20250311T100000Z",
+					}),
+					url: "/cal/partial-evt-1.ics",
+					etag: '"etag-partial"',
+				},
+			]);
+			const tools = createCalendarTools(mockClient, db);
+			const tool = tools.find((t) => t.name === "update_event");
+
+			const result = (await tool?.execute({
+				uid: "partial-evt-1",
+				title: "New Title Only",
+			})) as { uid: string; updated: boolean };
+
+			expect(result.updated).toBe(true);
+			expect(mockClient.davClient.updateCalendarObject).toHaveBeenCalled();
+
+			// Verify the iCal data contains the new title and original times
+			const callArgs = (
+				mockClient.davClient.updateCalendarObject as ReturnType<typeof vi.fn>
+			).mock.calls[0]?.[0];
+			const icalData = callArgs?.calendarObject?.data as string;
+			expect(icalData).toContain("SUMMARY:New Title Only");
+			expect(icalData).toContain("DTSTART:20250311T090000Z");
+			expect(icalData).toContain("DTEND:20250311T100000Z");
+		});
+	});
+
 	describe("delete_event", () => {
 		it("deletes event and removes UID from D1", async () => {
 			const db = getDb();

@@ -12,6 +12,20 @@ export interface CalendarClient {
 	calendar: DAVCalendar;
 }
 
+const CALDAV_TIMEOUT_MS = 30_000;
+
+function createTimeoutFetch(timeoutMs: number): typeof fetch {
+	return async (input, init) => {
+		const controller = new AbortController();
+		const timer = setTimeout(() => controller.abort(), timeoutMs);
+		try {
+			return await fetch(input, { ...init, signal: controller.signal });
+		} finally {
+			clearTimeout(timer);
+		}
+	};
+}
+
 export async function createCalendarClient(
 	env: CalDAVEnv,
 ): Promise<CalendarClient> {
@@ -23,6 +37,7 @@ export async function createCalendarClient(
 		},
 		authMethod: "Basic",
 		defaultAccountType: "caldav",
+		fetch: createTimeoutFetch(CALDAV_TIMEOUT_MS),
 	});
 
 	await client.login();

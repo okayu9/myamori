@@ -64,5 +64,5 @@ Add CalDAV-related env vars to `AgentWorkflowEnv`. In `workflow.ts`, conditional
 
 - **`tsdav` Workers compatibility** — `tsdav` may not work under `nodejs_compat`. → Mitigation: Test early in implementation. Fall back to raw HTTP CalDAV requests if needed (spec explicitly allows this).
 - **CalDAV latency** — Each tool call makes real-time CalDAV requests to iCloud. → Mitigation: Acceptable for single-user system. Add timeout (10s) to prevent hanging.
-- **Dynamic risk complexity** — `get_events_details` mixes low and high risk events in one call. → Mitigation: Split response into immediately available (AI-created) and approval-required (user-created) events. Keep the logic in the tool, not the registry.
+- **Dynamic risk complexity** — `get_events_details` mixes low- and high-risk events in one call. → Mitigation: Split response into immediately available (AI-created) and approval-required (user-created) events. Keep the logic in the tool, not the registry.
 - **iCal parsing edge cases** — Recurring events, timezone handling, all-day events spanning multiple days. → Mitigation: Start simple — treat each VEVENT as-is. Timezone conversion to ISO 8601 with timezone info.
