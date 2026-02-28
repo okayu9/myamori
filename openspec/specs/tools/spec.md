@@ -6,36 +6,47 @@ Defines the tool framework and each tool's behavior, inputs, outputs, and risk l
 ## Requirements
 ### Requirement: Tool Definition
 
-Every tool SHALL be defined with a Zod schema for input/output validation and an explicit risk level.
+Every tool SHALL be defined with a Zod schema for input validation, a description, and an explicit risk level.
+
+The tool framework SHALL provide a `ToolRegistry` for registering tools and converting them to AI SDK format.
+
+The registry SHALL convert tool definitions to Vercel AI SDK `tool()` format for use with `generateText`.
 
 #### Scenario: Tool registered with schema and risk level
 
-- **WHEN** a new tool is registered
-- **THEN** it has a Zod input schema, a Zod output schema, and an explicit risk level
+- **WHEN** a new tool is registered in the ToolRegistry
+- **THEN** it has a name, description, Zod input schema, an explicit risk level, and an execute function
+
+#### Scenario: Registry converts to AI SDK format
+
+- **WHEN** the agent prepares an LLM invocation
+- **THEN** the ToolRegistry converts all registered tools to the AI SDK `tool()` format
+- **AND** each tool's execute function is wrapped with risk-level gating
 
 ### Requirement: Risk Levels
 
 The system SHALL classify tools into three risk levels:
 
-- **`low`**: Execute immediately. Examples: email listing, calendar availability check, AI-created event details, file reading.
-- **`medium`**: Execute and report the action in the reply. Examples: file writing.
-- **`high`**: Require approval before execution. Examples: user-created event details, calendar mutations, file deletion.
+- **`low`**: Execute immediately. The tool runs and returns its result to the LLM.
+- **`medium`**: Execute immediately. The system prompt instructs the LLM to report the action in its reply.
+- **`high`**: Reject execution with an error message. The LLM receives a message indicating approval is required but not yet implemented.
 
 #### Scenario: Low-risk tool executed immediately
 
-- **WHEN** a tool with risk level `low` is invoked
-- **THEN** it executes immediately without approval or reporting
+- **WHEN** a tool with risk level `low` is invoked by the LLM
+- **THEN** it executes immediately and returns the result
 
-#### Scenario: Medium-risk tool reported
+#### Scenario: Medium-risk tool executed and reported
 
-- **WHEN** a tool with risk level `medium` is invoked
-- **THEN** it executes immediately
-- **AND** the action is reported in the reply to the user
+- **WHEN** a tool with risk level `medium` is invoked by the LLM
+- **THEN** it executes immediately and returns the result
+- **AND** the LLM is instructed via system prompt to report the action in its reply
 
-#### Scenario: High-risk tool requires approval
+#### Scenario: High-risk tool rejected
 
-- **WHEN** a tool with risk level `high` is invoked
-- **THEN** the approval flow is triggered before execution
+- **WHEN** a tool with risk level `high` is invoked by the LLM
+- **THEN** execution is rejected with an error message
+- **AND** the LLM receives "This action requires approval which is not yet implemented"
 
 ### Requirement: Forwarded Email Reader — Design Rationale
 
