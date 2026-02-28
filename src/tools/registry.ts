@@ -1,8 +1,16 @@
 import { type Tool, tool } from "ai";
 import type { ToolDefinition } from "./types";
 
+export interface ToolExecutionLog {
+	toolName: string;
+	status: "success" | "error";
+	input: unknown;
+	durationMs: number;
+}
+
 export interface ToolRegistryOptions {
 	onHighRisk?: (toolName: string, input: unknown) => Promise<string>;
+	onToolExecuted?: (log: ToolExecutionLog) => Promise<void>;
 }
 
 export class ToolRegistry {
@@ -49,6 +57,24 @@ function createGatedExecute(
 				"This action requires approval. Configure ToolRegistryOptions.onHighRisk to handle high-risk tools.",
 			);
 		}
-		return await def.execute(input);
+		const start = Date.now();
+		let status: "success" | "error" = "success";
+		try {
+			return await def.execute(input);
+		} catch (error) {
+			status = "error";
+			throw error;
+		} finally {
+			if (options?.onToolExecuted) {
+				options
+					.onToolExecuted({
+						toolName: def.name,
+						status,
+						input,
+						durationMs: Date.now() - start,
+					})
+					.catch((e) => console.error("Failed to log tool execution:", e));
+			}
+		}
 	};
 }

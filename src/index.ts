@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import type { AgentWorkflowParams } from "./agent/workflow";
 import { getApproval, resolveApproval } from "./approval/handler";
+import { logToolExecution } from "./audit/logger";
 import { TelegramAdapter } from "./channels/telegram";
 import { telegramUpdateSchema } from "./channels/telegram-schema";
 import { createDb } from "./db";
@@ -176,7 +177,15 @@ async function handleCallbackQuery(
 			);
 			return;
 		}
+		const toolStart = Date.now();
 		const toolResult = await toolDef.execute(parsedInput.data);
+		await logToolExecution(db, {
+			chatId: approval.chatId,
+			toolName: approval.toolName,
+			status: "success",
+			input: parsedInput.data,
+			durationMs: Date.now() - toolStart,
+		});
 		await adapter.sendReply(
 			approval.chatId,
 			`✅ ${approval.toolName} executed:\n\n${JSON.stringify(toolResult, null, 2)}`,
@@ -184,6 +193,13 @@ async function handleCallbackQuery(
 		);
 	} catch (error) {
 		const message = error instanceof Error ? error.message : "Unknown error";
+		await logToolExecution(db, {
+			chatId: approval.chatId,
+			toolName: approval.toolName,
+			status: "error",
+			input: approval.toolInput,
+			durationMs: 0,
+		});
 		await adapter.sendReply(
 			approval.chatId,
 			`❌ ${approval.toolName} failed: ${message}`,
