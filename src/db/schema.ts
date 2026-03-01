@@ -28,6 +28,12 @@ export const auditLogs = sqliteTable(
 	],
 );
 
+export const calendarUids = sqliteTable("calendar_uids", {
+	id: text("id").primaryKey(),
+	eventUid: text("event_uid").notNull().unique(),
+	createdAt: text("created_at").notNull(),
+});
+
 export const pendingApprovals = sqliteTable("pending_approvals", {
 	id: text("id").primaryKey(),
 	chatId: text("chat_id").notNull(),
