@@ -13,6 +13,7 @@ import { createCalendarTools } from "../tools/calendar";
 import { createCalendarClient } from "../tools/calendar-client";
 import { createFileTools } from "../tools/files";
 import { ToolRegistry } from "../tools/registry";
+import { createSchedulerTools } from "../tools/scheduler";
 import { createWebSearchTool } from "../tools/web-search";
 import { loadHistory, saveMessages } from "./history";
 import { buildSystemPrompt } from "./prompt";
@@ -34,6 +35,7 @@ export interface AgentWorkflowEnv {
 	CALDAV_PASSWORD?: string;
 	CALDAV_CALENDAR_NAME?: string;
 	FILE_BUCKET?: R2Bucket;
+	SCHEDULER_QUEUE?: Queue;
 }
 
 export class AgentWorkflow extends WorkflowEntrypoint<
@@ -87,6 +89,16 @@ export class AgentWorkflow extends WorkflowEntrypoint<
 						});
 						const calDb = createDb(this.env.DB);
 						for (const tool of createCalendarTools(calClient, calDb)) {
+							registry.register(tool);
+						}
+					}
+					{
+						const schedulerDb = createDb(this.env.DB);
+						for (const tool of createSchedulerTools(
+							schedulerDb,
+							chatId,
+							threadId,
+						)) {
 							registry.register(tool);
 						}
 					}
