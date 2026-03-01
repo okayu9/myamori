@@ -34,6 +34,25 @@ export const calendarUids = sqliteTable("calendar_uids", {
 	createdAt: text("created_at").notNull(),
 });
 
+export const scheduledJobs = sqliteTable(
+	"scheduled_jobs",
+	{
+		id: text("id").primaryKey(),
+		name: text("name").notNull(),
+		cronExpr: text("cron_expr").notNull(),
+		prompt: text("prompt").notNull(),
+		chatId: text("chat_id").notNull(),
+		threadId: integer("thread_id"),
+		enabled: integer("enabled").notNull().default(1),
+		nextRunAt: text("next_run_at").notNull(),
+		createdAt: text("created_at").notNull(),
+		updatedAt: text("updated_at").notNull(),
+	},
+	(table) => [
+		index("idx_scheduled_jobs_next_run").on(table.enabled, table.nextRunAt),
+	],
+);
+
 export const pendingApprovals = sqliteTable("pending_approvals", {
 	id: text("id").primaryKey(),
 	chatId: text("chat_id").notNull(),

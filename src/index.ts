@@ -6,8 +6,11 @@ import { TelegramAdapter } from "./channels/telegram";
 import { telegramUpdateSchema } from "./channels/telegram-schema";
 import { createDb } from "./db";
 import { checkRateLimit } from "./rate-limit/checker";
+import type { SchedulerJobMessage } from "./scheduler/handler";
+import { handleScheduledEvent } from "./scheduler/handler";
 import { createFileTools } from "./tools/files";
 import { ToolRegistry } from "./tools/registry";
+import { createSchedulerTools } from "./tools/scheduler";
 import { createWebSearchTool } from "./tools/web-search";
 
 type Bindings = {
@@ -24,6 +27,7 @@ type Bindings = {
 	CALDAV_PASSWORD?: string;
 	CALDAV_CALENDAR_NAME?: string;
 	FILE_BUCKET?: R2Bucket;
+	SCHEDULER_QUEUE: Queue;
 	AGENT_WORKFLOW: Workflow<AgentWorkflowParams>;
 	DB: D1Database;
 	RATE_LIMIT_KV: KVNamespace;
@@ -200,7 +204,11 @@ async function handleCallbackQuery(
 	// Approved — execute the tool
 	await adapter.answerCallbackQuery(callbackQueryId, "Approved! Executing...");
 
-	const registry = buildToolRegistry(env);
+	const registry = buildToolRegistry(
+		env,
+		approval.chatId,
+		approval.threadId ?? undefined,
+	);
 	const toolDef = registry.getByName(approval.toolName);
 	if (!toolDef) {
 		await adapter.sendReply(
@@ -254,7 +262,11 @@ async function handleCallbackQuery(
 	}
 }
 
-function buildToolRegistry(env: Bindings): ToolRegistry {
+function buildToolRegistry(
+	env: Bindings,
+	chatId?: string,
+	threadId?: number,
+): ToolRegistry {
 	const registry = new ToolRegistry();
 	if (env.TAVILY_API_KEY?.trim()) {
 		registry.register(createWebSearchTool(env.TAVILY_API_KEY));
@@ -264,8 +276,48 @@ function buildToolRegistry(env: Bindings): ToolRegistry {
 			registry.register(tool);
 		}
 	}
+	{
+		const db = createDb(env.DB);
+		for (const tool of createSchedulerTools(db, chatId ?? "", threadId)) {
+			registry.register(tool);
+		}
+	}
 	return registry;
 }
 
-export default app;
+export default {
+	fetch: app.fetch,
+	async scheduled(
+		_event: ScheduledEvent,
+		env: Bindings,
+		_ctx: ExecutionContext,
+	) {
+		await handleScheduledEvent({
+			DB: env.DB,
+			SCHEDULER_QUEUE: env.SCHEDULER_QUEUE,
+		});
+	},
+	async queue(
+		batch: MessageBatch<SchedulerJobMessage>,
+		env: Bindings,
+		_ctx: ExecutionContext,
+	) {
+		for (const msg of batch.messages) {
+			const { chatId, prompt, threadId } = msg.body;
+			try {
+				await env.AGENT_WORKFLOW.create({
+					params: {
+						chatId,
+						userMessage: prompt,
+						threadId,
+					},
+				});
+				msg.ack();
+			} catch (error) {
+				console.error(`Failed to process scheduled job:`, error);
+				msg.retry();
+			}
+		}
+	},
+};
 export { AgentWorkflow } from "./agent/workflow";
