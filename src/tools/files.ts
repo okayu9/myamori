@@ -112,7 +112,11 @@ export function createFileTools(bucket: R2Bucket): ToolDefinition[] {
 			validateFileKey(input.key);
 
 			await bucket.put(input.key, input.content);
-			return { key: input.key, written: true, size: input.content.length };
+			return {
+				key: input.key,
+				written: true,
+				size: new TextEncoder().encode(input.content).length,
+			};
 		},
 	});
 
