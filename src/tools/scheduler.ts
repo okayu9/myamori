@@ -136,7 +136,12 @@ export function createSchedulerTools(
 			await db
 				.update(scheduledJobs)
 				.set(updates)
-				.where(eq(scheduledJobs.id, input.jobId));
+				.where(
+					and(
+						eq(scheduledJobs.id, input.jobId),
+						eq(scheduledJobs.chatId, chatId),
+					),
+				);
 
 			return { jobId: input.jobId, updated: true };
 		},

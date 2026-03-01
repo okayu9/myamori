@@ -315,7 +315,7 @@ export default {
 				msg.ack();
 			} catch (error) {
 				console.error(
-					`Failed to process scheduled job ${msg.body.jobId} for chat ${chatId}:`,
+					`Failed to process scheduled job ${msg.body.jobId} for chat ***${chatId.slice(-6)}:`,
 					error,
 				);
 				msg.retry();
