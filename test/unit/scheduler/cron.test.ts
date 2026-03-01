@@ -104,4 +104,20 @@ describe("getNextRun", () => {
 		const next = getNextRun("0 0 1 1 *", after);
 		expect(next.toISOString()).toBe("2026-01-01T00:00:00.000Z");
 	});
+
+	it("uses POSIX OR semantics when both DOM and DOW are restricted", () => {
+		// "0 0 15 * 1" = 15th of month OR any Monday
+		// 2025-06-14 is Saturday. Next Monday is 2025-06-16, next 15th is 2025-06-15.
+		// With OR semantics, 15th (Sunday) should match first.
+		const after = new Date("2025-06-14T00:00:00Z");
+		const next = getNextRun("0 0 15 * 1", after);
+		expect(next.toISOString()).toBe("2025-06-15T00:00:00.000Z");
+	});
+
+	it("uses AND semantics when only DOM is restricted", () => {
+		// "0 0 15 * *" = 15th of every month (DOW is *, so AND)
+		const after = new Date("2025-06-14T00:00:00Z");
+		const next = getNextRun("0 0 15 * *", after);
+		expect(next.toISOString()).toBe("2025-06-15T00:00:00.000Z");
+	});
 });

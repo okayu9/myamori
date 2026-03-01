@@ -8,8 +8,10 @@ interface CronFields {
 	minutes: Set<number>;
 	hours: Set<number>;
 	daysOfMonth: Set<number>;
+	daysOfMonthWild: boolean;
 	months: Set<number>;
 	daysOfWeek: Set<number>;
+	daysOfWeekWild: boolean;
 }
 
 function parseField(field: string, min: number, max: number): Set<number> {
@@ -78,18 +80,28 @@ export function parseCron(expr: string): CronFields {
 		minutes: parseField(minute, 0, 59),
 		hours: parseField(hour, 0, 23),
 		daysOfMonth: parseField(dom, 1, 31),
+		daysOfMonthWild: dom === "*",
 		months: parseField(month, 1, 12),
 		daysOfWeek: parseField(dow, 0, 6),
+		daysOfWeekWild: dow === "*",
 	};
 }
 
 /**
  * Compute the next run time after `after` for the given cron expression.
  * Returns a Date in UTC.
+ *
+ * Day matching follows POSIX cron semantics:
+ * - If both DOM and DOW are restricted (not `*`), a day matches if EITHER matches (OR).
+ * - If only one is restricted, matching uses that field alone (AND with other fields).
+ * - If both are `*`, every day matches.
  */
 export function getNextRun(cronExpr: string, after: Date): Date {
 	const fields = parseCron(cronExpr);
 	const d = new Date(after.getTime());
+
+	// When both DOM and DOW are restricted, use OR semantics (POSIX)
+	const bothRestricted = !fields.daysOfMonthWild && !fields.daysOfWeekWild;
 
 	// Start from the next minute
 	d.setUTCSeconds(0, 0);
@@ -109,13 +121,13 @@ export function getNextRun(cronExpr: string, after: Date): Date {
 			continue;
 		}
 
-		if (!fields.daysOfMonth.has(d.getUTCDate())) {
-			d.setUTCDate(d.getUTCDate() + 1);
-			d.setUTCHours(0, 0, 0, 0);
-			continue;
-		}
+		const domMatch = fields.daysOfMonth.has(d.getUTCDate());
+		const dowMatch = fields.daysOfWeek.has(d.getUTCDay());
+		const dayMatch = bothRestricted
+			? domMatch || dowMatch
+			: domMatch && dowMatch;
 
-		if (!fields.daysOfWeek.has(d.getUTCDay())) {
+		if (!dayMatch) {
 			d.setUTCDate(d.getUTCDate() + 1);
 			d.setUTCHours(0, 0, 0, 0);
 			continue;

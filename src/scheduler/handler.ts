@@ -44,11 +44,13 @@ export async function handleScheduledEvent(env: SchedulerEnv): Promise<void> {
 
 	await env.SCHEDULER_QUEUE.sendBatch(messages);
 
-	for (const job of dueJobs) {
-		const nextRunAt = getNextRun(job.cronExpr, new Date()).toISOString();
-		await db
-			.update(scheduledJobs)
-			.set({ nextRunAt, updatedAt: new Date().toISOString() })
-			.where(eq(scheduledJobs.id, job.id));
-	}
+	await Promise.all(
+		dueJobs.map((job) => {
+			const nextRunAt = getNextRun(job.cronExpr, new Date()).toISOString();
+			return db
+				.update(scheduledJobs)
+				.set({ nextRunAt, updatedAt: new Date().toISOString() })
+				.where(eq(scheduledJobs.id, job.id));
+		}),
+	);
 }

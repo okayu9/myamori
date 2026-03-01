@@ -18,7 +18,10 @@ export function createSchedulerTools(
 		inputSchema: z.object({}),
 		riskLevel: "low",
 		execute: async () => {
-			const jobs = await db.select().from(scheduledJobs);
+			const jobs = await db
+				.select()
+				.from(scheduledJobs)
+				.where(eq(scheduledJobs.chatId, chatId));
 			return {
 				jobs: jobs.map((job) => ({
 					id: job.id,
@@ -94,9 +97,10 @@ export function createSchedulerTools(
 		riskLevel: "high",
 		execute: async (input) => {
 			const existing = await db
-				.select()
+				.select({ id: scheduledJobs.id })
 				.from(scheduledJobs)
-				.where(eq(scheduledJobs.id, input.jobId));
+				.where(eq(scheduledJobs.id, input.jobId))
+				.limit(1);
 
 			if (existing.length === 0) {
 				throw new Error(`Job not found: ${input.jobId}`);
@@ -142,9 +146,10 @@ export function createSchedulerTools(
 		riskLevel: "high",
 		execute: async (input) => {
 			const existing = await db
-				.select()
+				.select({ id: scheduledJobs.id })
 				.from(scheduledJobs)
-				.where(eq(scheduledJobs.id, input.jobId));
+				.where(eq(scheduledJobs.id, input.jobId))
+				.limit(1);
 
 			if (existing.length === 0) {
 				throw new Error(`Job not found: ${input.jobId}`);

@@ -1,6 +1,6 @@
 import { env } from "cloudflare:test";
 import { eq } from "drizzle-orm";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { createDb } from "../../../src/db";
 import { scheduledJobs } from "../../../src/db/schema";
 import { handleScheduledEvent } from "../../../src/scheduler/handler";
@@ -31,6 +31,10 @@ async function insertJob(
 }
 
 describe("handleScheduledEvent", () => {
+	beforeEach(async () => {
+		const db = getDb();
+		await db.delete(scheduledJobs);
+	});
 	it("enqueues due jobs to the queue", async () => {
 		const db = getDb();
 		const jobId = await insertJob(db);

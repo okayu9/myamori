@@ -276,9 +276,9 @@ function buildToolRegistry(
 			registry.register(tool);
 		}
 	}
-	{
+	if (chatId) {
 		const db = createDb(env.DB);
-		for (const tool of createSchedulerTools(db, chatId ?? "", threadId)) {
+		for (const tool of createSchedulerTools(db, chatId, threadId)) {
 			registry.register(tool);
 		}
 	}
@@ -314,7 +314,10 @@ export default {
 				});
 				msg.ack();
 			} catch (error) {
-				console.error(`Failed to process scheduled job:`, error);
+				console.error(
+					`Failed to process scheduled job for chat ${chatId}:`,
+					error,
+				);
 				msg.retry();
 			}
 		}
