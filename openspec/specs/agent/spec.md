@@ -11,12 +11,12 @@ The agent SHALL process each incoming message through the following steps in ord
 1. Verify the user is in the allowlist (in the webhook handler, before dispatching).
 2. Dispatch a Cloudflare Workflow instance for the message.
 3. In the Workflow, retrieve recent conversation history from D1.
-4. Build the system prompt with tool descriptions and call the LLM via Vercel AI SDK with registered tools and `stopWhen: stepCountIs(5)` for agentic looping.
-5. If the LLM returns a text response, send it to the user via Telegram.
-6. If the LLM requests a tool call, the AI SDK executes it automatically and feeds the result back to the LLM (up to the Tool Call Limit).
-7. Save the user message and assistant response to D1.
-
-Tool calls, approval flow, audit logging, and long-term memory retrieval are deferred to separate changes.
+4. Retrieve relevant long-term memories from Vectorize by embedding the user message and querying with `topK: 5` filtered by chat ID.
+5. Build the system prompt with tool descriptions, retrieved memories, and call the LLM via Vercel AI SDK with registered tools and `stopWhen: stepCountIs(5)` for agentic looping.
+6. If the LLM returns a text response, send it to the user via Telegram.
+7. If the LLM requests a tool call, the AI SDK executes it automatically and feeds the result back to the LLM (up to the Tool Call Limit).
+8. Save the user message and assistant response to D1.
+9. Summarize the conversation turn and store as a long-term memory in Vectorize and D1 (best-effort, non-fatal on failure).
 
 #### Scenario: Text response from LLM
 
@@ -24,6 +24,7 @@ Tool calls, approval flow, audit logging, and long-term memory retrieval are def
 - **AND** the LLM returns a text response without tool calls
 - **THEN** the agent sends the text response to the user via Telegram
 - **AND** saves both the user message and assistant response to D1
+- **AND** creates a long-term memory from the conversation turn (best-effort)
 
 #### Scenario: Tool call from LLM
 
@@ -86,13 +87,25 @@ The model ID SHALL be configurable via the `ANTHROPIC_MODEL` environment variabl
 
 ### Requirement: System Prompt
 
-The system prompt SHALL be constructed dynamically and include: the assistant's role and personality, descriptions of all registered tools with their risk levels, the current date and time in ISO 8601 format, and instructions for medium-risk tool reporting.
+The system prompt SHALL be constructed dynamically and include: the assistant's role and personality, descriptions of all registered tools with their risk levels, retrieved long-term memories (if any), the current date and time in ISO 8601 format, and instructions for medium-risk tool reporting.
 
 #### Scenario: Dynamic system prompt with tools
 
 - **WHEN** the agent prepares an LLM invocation
 - **AND** tools are registered in the registry
 - **THEN** the system prompt includes each tool's name, description, and risk level
+
+#### Scenario: System prompt with memories
+
+- **WHEN** the agent prepares an LLM invocation
+- **AND** relevant memories were retrieved from Vectorize
+- **THEN** the system prompt includes a "Relevant Memories" section with the memory summaries
+
+#### Scenario: System prompt without memories
+
+- **WHEN** the agent prepares an LLM invocation
+- **AND** no relevant memories were found or memory retrieval failed
+- **THEN** the system prompt does not include a memories section
 
 #### Scenario: Medium-risk reporting instruction
 
