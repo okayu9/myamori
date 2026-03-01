@@ -6,6 +6,7 @@ import { TelegramAdapter } from "./channels/telegram";
 import { telegramUpdateSchema } from "./channels/telegram-schema";
 import { createDb } from "./db";
 import { checkRateLimit } from "./rate-limit/checker";
+import { createFileTools } from "./tools/files";
 import { ToolRegistry } from "./tools/registry";
 import { createWebSearchTool } from "./tools/web-search";
 
@@ -22,6 +23,7 @@ type Bindings = {
 	CALDAV_USERNAME?: string;
 	CALDAV_PASSWORD?: string;
 	CALDAV_CALENDAR_NAME?: string;
+	FILE_BUCKET?: R2Bucket;
 	AGENT_WORKFLOW: Workflow<AgentWorkflowParams>;
 	DB: D1Database;
 	RATE_LIMIT_KV: KVNamespace;
@@ -256,6 +258,11 @@ function buildToolRegistry(env: Bindings): ToolRegistry {
 	const registry = new ToolRegistry();
 	if (env.TAVILY_API_KEY?.trim()) {
 		registry.register(createWebSearchTool(env.TAVILY_API_KEY));
+	}
+	if (env.FILE_BUCKET) {
+		for (const tool of createFileTools(env.FILE_BUCKET)) {
+			registry.register(tool);
+		}
 	}
 	return registry;
 }

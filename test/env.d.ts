@@ -9,5 +9,6 @@ declare module "cloudflare:test" {
 		ANTHROPIC_MODEL: string;
 		TAVILY_API_KEY: string;
 		RATE_LIMIT_KV: KVNamespace;
+		FILE_BUCKET: R2Bucket;
 	}
 }
