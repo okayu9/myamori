@@ -53,6 +53,21 @@ export const scheduledJobs = sqliteTable(
 	],
 );
 
+export const emails = sqliteTable(
+	"emails",
+	{
+		id: text("id").primaryKey(),
+		fromAddress: text("from_address").notNull(),
+		toAddress: text("to_address").notNull(),
+		subject: text("subject").notNull(),
+		summary: text("summary").notNull(),
+		receivedAt: text("received_at").notNull(),
+		r2Key: text("r2_key").notNull(),
+		createdAt: text("created_at").notNull(),
+	},
+	(table) => [index("idx_emails_received_at").on(table.receivedAt)],
+);
+
 export const pendingApprovals = sqliteTable("pending_approvals", {
 	id: text("id").primaryKey(),
 	chatId: text("chat_id").notNull(),
