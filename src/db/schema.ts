@@ -68,6 +68,17 @@ export const emails = sqliteTable(
 	(table) => [index("idx_emails_received_at").on(table.receivedAt)],
 );
 
+export const memories = sqliteTable(
+	"memories",
+	{
+		id: text("id").primaryKey(),
+		chatId: text("chat_id").notNull(),
+		summary: text("summary").notNull(),
+		createdAt: text("created_at").notNull(),
+	},
+	(table) => [index("idx_memories_chat_id").on(table.chatId)],
+);
+
 export const pendingApprovals = sqliteTable("pending_approvals", {
 	id: text("id").primaryKey(),
 	chatId: text("chat_id").notNull(),

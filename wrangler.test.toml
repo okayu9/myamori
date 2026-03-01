@@ -1,0 +1,36 @@
+# Test-only wrangler config (excludes remote-only bindings: Vectorize, AI)
+name = "myamori"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "myamori-db"
+database_id = "placeholder"
+migrations_dir = "drizzle/migrations"
+
+[[kv_namespaces]]
+binding = "RATE_LIMIT_KV"
+id = "placeholder"
+
+[[r2_buckets]]
+binding = "FILE_BUCKET"
+bucket_name = "myamori-files"
+
+[[workflows]]
+name = "agent-workflow"
+binding = "AGENT_WORKFLOW"
+class_name = "AgentWorkflow"
+
+[triggers]
+crons = ["*/5 * * * *"]
+
+[[queues.producers]]
+binding = "SCHEDULER_QUEUE"
+queue = "myamori-scheduler"
+
+[[queues.consumers]]
+queue = "myamori-scheduler"
+max_batch_size = 10
+max_retries = 3

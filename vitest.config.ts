@@ -13,7 +13,7 @@ export default defineWorkersConfig(async () => {
 			setupFiles: ["./test/apply-migrations.ts"],
 			poolOptions: {
 				workers: {
-					wrangler: { configPath: "./wrangler.toml" },
+					wrangler: { configPath: "./wrangler.test.toml" },
 					miniflare: {
 						bindings: {
 							TELEGRAM_BOT_TOKEN: "test-bot-token",
