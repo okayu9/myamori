@@ -8,7 +8,7 @@ The agent currently uses only short-term memory (last 20 messages). Important co
 - Integrate Workers AI (`@cf/baai/bge-m3`) for multilingual embedding generation (Japanese + English).
 - Integrate Cloudflare Vectorize for vector storage and similarity search.
 - Add a `retrieve-memories` workflow step that queries Vectorize before the LLM call and injects relevant memories into the system prompt.
-- Add a `memorize` workflow step that summarizes and embeds completed conversation turns when history exceeds a threshold.
+- Add a `memorize` workflow step that summarizes and embeds completed conversation turns when the assistant response is substantive (≥ 50 characters).
 - Extend `buildSystemPrompt` to accept and render retrieved memories.
 
 ## Capabilities

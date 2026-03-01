@@ -1,4 +1,4 @@
-import { inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import type { createDb } from "../db";
 import { memories } from "../db/schema";
 import { embedText } from "./embedder";
@@ -39,7 +39,7 @@ export async function retrieveMemories(
 	const rows = await db
 		.select({ id: memories.id, summary: memories.summary })
 		.from(memories)
-		.where(inArray(memories.id, ids));
+		.where(and(inArray(memories.id, ids), eq(memories.chatId, params.chatId)));
 
 	const summaryMap = new Map(rows.map((r) => [r.id, r.summary]));
 

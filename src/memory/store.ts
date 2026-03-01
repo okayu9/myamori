@@ -13,6 +13,13 @@ export async function storeMemory(
 	const id = crypto.randomUUID();
 	const now = new Date().toISOString();
 
+	await db.insert(memories).values({
+		id,
+		chatId: params.chatId,
+		summary: params.summary,
+		createdAt: now,
+	});
+
 	await vectorize.upsert([
 		{
 			id,
@@ -23,13 +30,6 @@ export async function storeMemory(
 			},
 		},
 	]);
-
-	await db.insert(memories).values({
-		id,
-		chatId: params.chatId,
-		summary: params.summary,
-		createdAt: now,
-	});
 
 	return id;
 }

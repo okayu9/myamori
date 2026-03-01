@@ -23,6 +23,9 @@ import { createWebSearchTool } from "../tools/web-search";
 import { loadHistory, saveMessages } from "./history";
 import { buildSystemPrompt } from "./prompt";
 
+const ERROR_FALLBACK =
+	"Sorry, I encountered an error processing your message. Please try again later.";
+
 export interface AgentWorkflowParams {
 	chatId: string;
 	userMessage: string;
@@ -215,8 +218,7 @@ export class AgentWorkflow extends WorkflowEntrypoint<
 				},
 			);
 		} catch {
-			replyText =
-				"Sorry, I encountered an error processing your message. Please try again later.";
+			replyText = ERROR_FALLBACK;
 		}
 
 		await step.do("send-reply", { timeout: "30 seconds" }, async () => {
@@ -248,7 +250,12 @@ export class AgentWorkflow extends WorkflowEntrypoint<
 			await saveMessages(db, chatId, userMessage, replyText);
 		});
 
-		if (this.env.VECTORIZE && this.env.AI && replyText.length >= 50) {
+		if (
+			this.env.VECTORIZE &&
+			this.env.AI &&
+			replyText.length >= 50 &&
+			replyText !== ERROR_FALLBACK
+		) {
 			try {
 				await step.do("memorize", async () => {
 					const anthropic = createAnthropic({
