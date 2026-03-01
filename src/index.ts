@@ -340,15 +340,21 @@ export default {
 			return;
 		}
 
+		let result: Awaited<ReturnType<typeof ingestEmail>>;
 		try {
-			const result = await ingestEmail(message.raw, {
+			result = await ingestEmail(message.raw, {
 				DB: env.DB,
 				FILE_BUCKET: env.FILE_BUCKET,
 				ANTHROPIC_API_KEY: env.ANTHROPIC_API_KEY,
 				ANTHROPIC_MODEL: env.ANTHROPIC_MODEL,
 			});
+		} catch (error) {
+			console.error("Email ingestion failed:", error);
+			return;
+		}
 
-			if (env.EMAIL_NOTIFICATION_CHAT_ID && env.TELEGRAM_BOT_TOKEN) {
+		if (env.EMAIL_NOTIFICATION_CHAT_ID && env.TELEGRAM_BOT_TOKEN) {
+			try {
 				const adapter = new TelegramAdapter(
 					env.TELEGRAM_BOT_TOKEN,
 					env.TELEGRAM_WEBHOOK_SECRET,
@@ -357,9 +363,9 @@ export default {
 					env.EMAIL_NOTIFICATION_CHAT_ID,
 					`📧 New email from ${result.from}\n📌 ${result.subject}\n\n${result.summary}`,
 				);
+			} catch (error) {
+				console.error("Email notification failed:", error);
 			}
-		} catch (error) {
-			console.error("Email ingestion failed:", error);
 		}
 	},
 };
