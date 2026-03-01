@@ -5,9 +5,11 @@ import { logToolExecution } from "./audit/logger";
 import { TelegramAdapter } from "./channels/telegram";
 import { telegramUpdateSchema } from "./channels/telegram-schema";
 import { createDb } from "./db";
+import { ingestEmail } from "./email/ingestion";
 import { checkRateLimit } from "./rate-limit/checker";
 import type { SchedulerJobMessage } from "./scheduler/handler";
 import { handleScheduledEvent } from "./scheduler/handler";
+import { createEmailTools } from "./tools/email";
 import { createFileTools } from "./tools/files";
 import { ToolRegistry } from "./tools/registry";
 import { createSchedulerTools } from "./tools/scheduler";
@@ -26,6 +28,7 @@ type Bindings = {
 	CALDAV_USERNAME?: string;
 	CALDAV_PASSWORD?: string;
 	CALDAV_CALENDAR_NAME?: string;
+	EMAIL_NOTIFICATION_CHAT_ID?: string;
 	FILE_BUCKET?: R2Bucket;
 	SCHEDULER_QUEUE: Queue<SchedulerJobMessage>;
 	AGENT_WORKFLOW: Workflow<AgentWorkflowParams>;
@@ -275,6 +278,10 @@ function buildToolRegistry(
 		for (const tool of createFileTools(env.FILE_BUCKET)) {
 			registry.register(tool);
 		}
+		const emailDb = createDb(env.DB);
+		for (const tool of createEmailTools(emailDb, env.FILE_BUCKET)) {
+			registry.register(tool);
+		}
 	}
 	if (chatId) {
 		const db = createDb(env.DB);
@@ -319,6 +326,45 @@ export default {
 					error,
 				);
 				msg.retry();
+			}
+		}
+	},
+	async email(
+		message: ForwardableEmailMessage,
+		env: Bindings,
+		_ctx: ExecutionContext,
+	) {
+		if (!env.FILE_BUCKET) {
+			console.error("FILE_BUCKET not configured, cannot ingest email");
+			message.setReject("Storage not configured");
+			return;
+		}
+
+		let result: Awaited<ReturnType<typeof ingestEmail>>;
+		try {
+			result = await ingestEmail(message.raw, {
+				DB: env.DB,
+				FILE_BUCKET: env.FILE_BUCKET,
+				ANTHROPIC_API_KEY: env.ANTHROPIC_API_KEY,
+				ANTHROPIC_MODEL: env.ANTHROPIC_MODEL,
+			});
+		} catch (error) {
+			console.error("Email ingestion failed:", error);
+			return;
+		}
+
+		if (env.EMAIL_NOTIFICATION_CHAT_ID && env.TELEGRAM_BOT_TOKEN) {
+			try {
+				const adapter = new TelegramAdapter(
+					env.TELEGRAM_BOT_TOKEN,
+					env.TELEGRAM_WEBHOOK_SECRET,
+				);
+				await adapter.sendReply(
+					env.EMAIL_NOTIFICATION_CHAT_ID,
+					`📧 New email from ${result.from}\n📌 ${result.subject}\n\n${result.summary}`,
+				);
+			} catch (error) {
+				console.error("Email notification failed:", error);
 			}
 		}
 	},

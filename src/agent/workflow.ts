@@ -11,6 +11,7 @@ import { TelegramAdapter } from "../channels/telegram";
 import { createDb } from "../db";
 import { createCalendarTools } from "../tools/calendar";
 import { createCalendarClient } from "../tools/calendar-client";
+import { createEmailTools } from "../tools/email";
 import { createFileTools } from "../tools/files";
 import { ToolRegistry } from "../tools/registry";
 import { createSchedulerTools } from "../tools/scheduler";
@@ -77,6 +78,13 @@ export class AgentWorkflow extends WorkflowEntrypoint<
 					}
 					if (this.env.FILE_BUCKET) {
 						for (const tool of createFileTools(this.env.FILE_BUCKET)) {
+							registry.register(tool);
+						}
+						const emailDb = createDb(this.env.DB);
+						for (const tool of createEmailTools(
+							emailDb,
+							this.env.FILE_BUCKET,
+						)) {
 							registry.register(tool);
 						}
 					}
