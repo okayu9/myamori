@@ -22,6 +22,7 @@ type Bindings = {
 	CALDAV_USERNAME?: string;
 	CALDAV_PASSWORD?: string;
 	CALDAV_CALENDAR_NAME?: string;
+	FILE_BUCKET?: R2Bucket;
 	AGENT_WORKFLOW: Workflow<AgentWorkflowParams>;
 	DB: D1Database;
 	RATE_LIMIT_KV: KVNamespace;

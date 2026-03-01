@@ -25,6 +25,7 @@ export default defineWorkersConfig(async () => {
 							TEST_MIGRATIONS: migrations,
 						},
 						kvNamespaces: ["RATE_LIMIT_KV"],
+						r2Buckets: ["FILE_BUCKET"],
 						d1Databases: ["DB"],
 					},
 				},

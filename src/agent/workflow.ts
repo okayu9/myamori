@@ -11,6 +11,7 @@ import { TelegramAdapter } from "../channels/telegram";
 import { createDb } from "../db";
 import { createCalendarTools } from "../tools/calendar";
 import { createCalendarClient } from "../tools/calendar-client";
+import { createFileTools } from "../tools/files";
 import { ToolRegistry } from "../tools/registry";
 import { createWebSearchTool } from "../tools/web-search";
 import { loadHistory, saveMessages } from "./history";
@@ -32,6 +33,7 @@ export interface AgentWorkflowEnv {
 	CALDAV_USERNAME?: string;
 	CALDAV_PASSWORD?: string;
 	CALDAV_CALENDAR_NAME?: string;
+	FILE_BUCKET?: R2Bucket;
 }
 
 export class AgentWorkflow extends WorkflowEntrypoint<
@@ -70,6 +72,11 @@ export class AgentWorkflow extends WorkflowEntrypoint<
 					const registry = new ToolRegistry();
 					if (this.env.TAVILY_API_KEY?.trim()) {
 						registry.register(createWebSearchTool(this.env.TAVILY_API_KEY));
+					}
+					if (this.env.FILE_BUCKET) {
+						for (const tool of createFileTools(this.env.FILE_BUCKET)) {
+							registry.register(tool);
+						}
 					}
 					if (this.env.CALDAV_URL?.trim()) {
 						const calClient = await createCalendarClient({
