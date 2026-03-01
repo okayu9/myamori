@@ -34,6 +34,8 @@ type Bindings = {
 	AGENT_WORKFLOW: Workflow<AgentWorkflowParams>;
 	DB: D1Database;
 	RATE_LIMIT_KV: KVNamespace;
+	VECTORIZE?: VectorizeIndex;
+	AI?: Ai;
 };
 
 const app = new Hono<{ Bindings: Bindings }>();

@@ -24,6 +24,13 @@ class_name = "AgentWorkflow"
 binding = "BUCKET"
 bucket_name = "${R2_BUCKET_NAME}"
 
+[[vectorize]]
+binding = "VECTORIZE"
+index_name = "${VECTORIZE_INDEX_NAME}"
+
+[ai]
+binding = "AI"
+
 [env.staging]
 name = "myamori-staging"
 

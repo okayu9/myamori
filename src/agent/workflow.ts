@@ -9,6 +9,10 @@ import { createApproval } from "../approval/handler";
 import { logLLMCall, logToolExecution } from "../audit/logger";
 import { TelegramAdapter } from "../channels/telegram";
 import { createDb } from "../db";
+import { embedText } from "../memory/embedder";
+import { retrieveMemories } from "../memory/retriever";
+import { storeMemory } from "../memory/store";
+import { summarizeTurn } from "../memory/summarizer";
 import { createCalendarTools } from "../tools/calendar";
 import { createCalendarClient } from "../tools/calendar-client";
 import { createEmailTools } from "../tools/email";
@@ -37,6 +41,8 @@ export interface AgentWorkflowEnv {
 	CALDAV_CALENDAR_NAME?: string;
 	FILE_BUCKET?: R2Bucket;
 	SCHEDULER_QUEUE?: Queue;
+	VECTORIZE?: VectorizeIndex;
+	AI?: Ai;
 }
 
 export class AgentWorkflow extends WorkflowEntrypoint<
@@ -53,6 +59,22 @@ export class AgentWorkflow extends WorkflowEntrypoint<
 			const db = createDb(this.env.DB);
 			return await loadHistory(db, chatId);
 		});
+
+		let memories: { summary: string; score: number }[] = [];
+		if (this.env.VECTORIZE && this.env.AI) {
+			try {
+				memories = await step.do("retrieve-memories", async () => {
+					const db = createDb(this.env.DB);
+					// biome-ignore lint/style/noNonNullAssertion: checked above
+					return await retrieveMemories(this.env.VECTORIZE!, this.env.AI!, db, {
+						chatId,
+						query: userMessage,
+					});
+				});
+			} catch (error) {
+				console.error("Memory retrieval failed:", error);
+			}
+		}
 
 		let replyText: string;
 		try {
@@ -114,7 +136,10 @@ export class AgentWorkflow extends WorkflowEntrypoint<
 					const llmStart = Date.now();
 					const result = await generateText({
 						model: anthropic(model),
-						system: buildSystemPrompt(registry.getAll()),
+						system: buildSystemPrompt(
+							registry.getAll(),
+							memories.length > 0 ? memories : undefined,
+						),
 						messages: [
 							...history.map((m) => ({
 								role: m.role as "user" | "assistant",
@@ -222,5 +247,36 @@ export class AgentWorkflow extends WorkflowEntrypoint<
 			const db = createDb(this.env.DB);
 			await saveMessages(db, chatId, userMessage, replyText);
 		});
+
+		if (this.env.VECTORIZE && this.env.AI && replyText.length >= 50) {
+			try {
+				await step.do("memorize", async () => {
+					const anthropic = createAnthropic({
+						apiKey: this.env.ANTHROPIC_API_KEY,
+					});
+					const model = this.env.ANTHROPIC_MODEL ?? "claude-haiku-4-5";
+
+					const summary = await summarizeTurn(
+						anthropic,
+						model,
+						userMessage,
+						replyText,
+					);
+
+					// biome-ignore lint/style/noNonNullAssertion: checked above
+					const vector = await embedText(this.env.AI!, summary);
+
+					const db = createDb(this.env.DB);
+					// biome-ignore lint/style/noNonNullAssertion: checked above
+					await storeMemory(this.env.VECTORIZE!, db, {
+						chatId,
+						summary,
+						vector,
+					});
+				});
+			} catch (error) {
+				console.error("Memorization failed:", error);
+			}
+		}
 	}
 }

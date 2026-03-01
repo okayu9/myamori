@@ -78,4 +78,24 @@ describe("buildSystemPrompt", () => {
 		const prompt = buildSystemPrompt(tools);
 		expect(prompt).not.toContain("medium-risk tool");
 	});
+
+	it("includes memories section when memories are provided", () => {
+		const prompt = buildSystemPrompt(undefined, [
+			{ summary: "User prefers dark mode", score: 0.9 },
+			{ summary: "User lives in Tokyo", score: 0.8 },
+		]);
+		expect(prompt).toContain("## Relevant Memories");
+		expect(prompt).toContain("User prefers dark mode");
+		expect(prompt).toContain("User lives in Tokyo");
+	});
+
+	it("does not include memories section when no memories", () => {
+		const prompt = buildSystemPrompt();
+		expect(prompt).not.toContain("Relevant Memories");
+	});
+
+	it("does not include memories section for empty array", () => {
+		const prompt = buildSystemPrompt(undefined, []);
+		expect(prompt).not.toContain("Relevant Memories");
+	});
 });
