@@ -27,7 +27,7 @@ type Bindings = {
 	CALDAV_PASSWORD?: string;
 	CALDAV_CALENDAR_NAME?: string;
 	FILE_BUCKET?: R2Bucket;
-	SCHEDULER_QUEUE: Queue;
+	SCHEDULER_QUEUE: Queue<SchedulerJobMessage>;
 	AGENT_WORKFLOW: Workflow<AgentWorkflowParams>;
 	DB: D1Database;
 	RATE_LIMIT_KV: KVNamespace;
@@ -315,7 +315,7 @@ export default {
 				msg.ack();
 			} catch (error) {
 				console.error(
-					`Failed to process scheduled job for chat ${chatId}:`,
+					`Failed to process scheduled job ${msg.body.jobId} for chat ${chatId}:`,
 					error,
 				);
 				msg.retry();

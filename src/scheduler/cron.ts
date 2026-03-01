@@ -23,8 +23,8 @@ function parseField(field: string, min: number, max: number): Set<number> {
 			slashIdx >= 0 ? Number.parseInt(part.substring(slashIdx + 1), 10) : 1;
 		const range = slashIdx >= 0 ? part.substring(0, slashIdx) : part;
 
-		if (step < 1) {
-			throw new Error(`Invalid step value: ${step}`);
+		if (Number.isNaN(step) || step < 1) {
+			throw new Error(`Invalid step value: ${part.substring(slashIdx + 1)}`);
 		}
 
 		let start: number;

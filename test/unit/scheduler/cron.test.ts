@@ -50,6 +50,11 @@ describe("parseCron", () => {
 		expect(() => parseCron("* * * * * *")).toThrow("expected 5 fields");
 	});
 
+	it("rejects NaN step values", () => {
+		expect(() => parseCron("*/abc * * * *")).toThrow("Invalid step value");
+		expect(() => parseCron("* */xyz * * *")).toThrow("Invalid step value");
+	});
+
 	it("rejects out-of-range values", () => {
 		expect(() => parseCron("60 * * * *")).toThrow("out of bounds");
 		expect(() => parseCron("* 24 * * *")).toThrow("out of bounds");

@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import type { createDb } from "../db";
 import { scheduledJobs } from "../db/schema";
@@ -99,7 +99,12 @@ export function createSchedulerTools(
 			const existing = await db
 				.select({ id: scheduledJobs.id })
 				.from(scheduledJobs)
-				.where(eq(scheduledJobs.id, input.jobId))
+				.where(
+					and(
+						eq(scheduledJobs.id, input.jobId),
+						eq(scheduledJobs.chatId, chatId),
+					),
+				)
 				.limit(1);
 
 			if (existing.length === 0) {
@@ -148,14 +153,26 @@ export function createSchedulerTools(
 			const existing = await db
 				.select({ id: scheduledJobs.id })
 				.from(scheduledJobs)
-				.where(eq(scheduledJobs.id, input.jobId))
+				.where(
+					and(
+						eq(scheduledJobs.id, input.jobId),
+						eq(scheduledJobs.chatId, chatId),
+					),
+				)
 				.limit(1);
 
 			if (existing.length === 0) {
 				throw new Error(`Job not found: ${input.jobId}`);
 			}
 
-			await db.delete(scheduledJobs).where(eq(scheduledJobs.id, input.jobId));
+			await db
+				.delete(scheduledJobs)
+				.where(
+					and(
+						eq(scheduledJobs.id, input.jobId),
+						eq(scheduledJobs.chatId, chatId),
+					),
+				);
 
 			return { jobId: input.jobId, deleted: true };
 		},
