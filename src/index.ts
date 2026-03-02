@@ -9,6 +9,8 @@ import { ingestEmail } from "./email/ingestion";
 import { checkRateLimit } from "./rate-limit/checker";
 import type { SchedulerJobMessage } from "./scheduler/handler";
 import { handleScheduledEvent } from "./scheduler/handler";
+import { createCalendarTools } from "./tools/calendar";
+import { createCalendarClient } from "./tools/calendar-client";
 import { createEmailTools } from "./tools/email";
 import { createFileTools } from "./tools/files";
 import { ToolRegistry } from "./tools/registry";
@@ -209,7 +211,7 @@ async function handleCallbackQuery(
 	// Approved — execute the tool
 	await adapter.answerCallbackQuery(callbackQueryId, "Approved! Executing...");
 
-	const registry = buildToolRegistry(
+	const registry = await buildToolRegistry(
 		env,
 		approval.chatId,
 		approval.threadId ?? undefined,
@@ -267,11 +269,11 @@ async function handleCallbackQuery(
 	}
 }
 
-function buildToolRegistry(
+async function buildToolRegistry(
 	env: Bindings,
 	chatId?: string,
 	threadId?: number,
-): ToolRegistry {
+): Promise<ToolRegistry> {
 	const registry = new ToolRegistry();
 	if (env.TAVILY_API_KEY?.trim()) {
 		registry.register(createWebSearchTool(env.TAVILY_API_KEY));
@@ -282,6 +284,18 @@ function buildToolRegistry(
 		}
 		const emailDb = createDb(env.DB);
 		for (const tool of createEmailTools(emailDb, env.FILE_BUCKET)) {
+			registry.register(tool);
+		}
+	}
+	if (env.CALDAV_URL?.trim()) {
+		const calClient = await createCalendarClient({
+			CALDAV_URL: env.CALDAV_URL,
+			CALDAV_USERNAME: env.CALDAV_USERNAME ?? "",
+			CALDAV_PASSWORD: env.CALDAV_PASSWORD ?? "",
+			CALDAV_CALENDAR_NAME: env.CALDAV_CALENDAR_NAME,
+		});
+		const calDb = createDb(env.DB);
+		for (const tool of createCalendarTools(calClient, calDb)) {
 			registry.register(tool);
 		}
 	}
