@@ -288,15 +288,28 @@ async function buildToolRegistry(
 		}
 	}
 	if (env.CALDAV_URL?.trim()) {
-		const calClient = await createCalendarClient({
-			CALDAV_URL: env.CALDAV_URL,
-			CALDAV_USERNAME: env.CALDAV_USERNAME ?? "",
-			CALDAV_PASSWORD: env.CALDAV_PASSWORD ?? "",
-			CALDAV_CALENDAR_NAME: env.CALDAV_CALENDAR_NAME,
-		});
-		const calDb = createDb(env.DB);
-		for (const tool of createCalendarTools(calClient, calDb)) {
-			registry.register(tool);
+		if (!env.CALDAV_USERNAME?.trim() || !env.CALDAV_PASSWORD?.trim()) {
+			console.error(
+				"CALDAV_URL is set but credentials are missing; skipping calendar tools",
+			);
+		} else {
+			try {
+				const calClient = await createCalendarClient({
+					CALDAV_URL: env.CALDAV_URL,
+					CALDAV_USERNAME: env.CALDAV_USERNAME,
+					CALDAV_PASSWORD: env.CALDAV_PASSWORD,
+					CALDAV_CALENDAR_NAME: env.CALDAV_CALENDAR_NAME,
+				});
+				const calDb = createDb(env.DB);
+				for (const tool of createCalendarTools(calClient, calDb)) {
+					registry.register(tool);
+				}
+			} catch (error) {
+				console.error(
+					"Failed to initialize calendar tools; continuing without them:",
+					error,
+				);
+			}
 		}
 	}
 	if (chatId) {
