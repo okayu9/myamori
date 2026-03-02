@@ -24,8 +24,9 @@ export async function buildToolRegistry(
 ): Promise<ToolRegistry> {
 	const registry = new ToolRegistry();
 
-	if (env.TAVILY_API_KEY?.trim()) {
-		registry.register(createWebSearchTool(env.TAVILY_API_KEY));
+	const tavilyApiKey = env.TAVILY_API_KEY?.trim();
+	if (tavilyApiKey) {
+		registry.register(createWebSearchTool(tavilyApiKey));
 	}
 
 	if (env.FILE_BUCKET) {
@@ -38,17 +39,20 @@ export async function buildToolRegistry(
 		}
 	}
 
-	if (env.CALDAV_URL?.trim()) {
-		if (!env.CALDAV_USERNAME?.trim() || !env.CALDAV_PASSWORD?.trim()) {
+	const caldavUrl = env.CALDAV_URL?.trim();
+	const caldavUsername = env.CALDAV_USERNAME?.trim();
+	const caldavPassword = env.CALDAV_PASSWORD?.trim();
+	if (caldavUrl) {
+		if (!caldavUsername || !caldavPassword) {
 			console.error(
 				"CALDAV_URL is set but credentials are missing; skipping calendar tools",
 			);
 		} else {
 			try {
 				const calClient = await createCalendarClient({
-					CALDAV_URL: env.CALDAV_URL,
-					CALDAV_USERNAME: env.CALDAV_USERNAME,
-					CALDAV_PASSWORD: env.CALDAV_PASSWORD,
+					CALDAV_URL: caldavUrl,
+					CALDAV_USERNAME: caldavUsername,
+					CALDAV_PASSWORD: caldavPassword,
 					CALDAV_CALENDAR_NAME: env.CALDAV_CALENDAR_NAME,
 				});
 				const calDb = createDb(env.DB);
