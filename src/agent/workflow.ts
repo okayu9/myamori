@@ -13,13 +13,7 @@ import { embedText } from "../memory/embedder";
 import { retrieveMemories } from "../memory/retriever";
 import { storeMemory } from "../memory/store";
 import { summarizeTurn } from "../memory/summarizer";
-import { createCalendarTools } from "../tools/calendar";
-import { createCalendarClient } from "../tools/calendar-client";
-import { createEmailTools } from "../tools/email";
-import { createFileTools } from "../tools/files";
-import { ToolRegistry } from "../tools/registry";
-import { createSchedulerTools } from "../tools/scheduler";
-import { createWebSearchTool } from "../tools/web-search";
+import { buildToolRegistry } from "../tools/build-registry";
 import { loadHistory, saveMessages } from "./history";
 import { buildSystemPrompt } from "./prompt";
 
@@ -97,44 +91,7 @@ export class AgentWorkflow extends WorkflowEntrypoint<
 					});
 					const model = this.env.ANTHROPIC_MODEL ?? "claude-haiku-4-5";
 
-					const registry = new ToolRegistry();
-					if (this.env.TAVILY_API_KEY?.trim()) {
-						registry.register(createWebSearchTool(this.env.TAVILY_API_KEY));
-					}
-					if (this.env.FILE_BUCKET) {
-						for (const tool of createFileTools(this.env.FILE_BUCKET)) {
-							registry.register(tool);
-						}
-						const emailDb = createDb(this.env.DB);
-						for (const tool of createEmailTools(
-							emailDb,
-							this.env.FILE_BUCKET,
-						)) {
-							registry.register(tool);
-						}
-					}
-					if (this.env.CALDAV_URL?.trim()) {
-						const calClient = await createCalendarClient({
-							CALDAV_URL: this.env.CALDAV_URL,
-							CALDAV_USERNAME: this.env.CALDAV_USERNAME ?? "",
-							CALDAV_PASSWORD: this.env.CALDAV_PASSWORD ?? "",
-							CALDAV_CALENDAR_NAME: this.env.CALDAV_CALENDAR_NAME,
-						});
-						const calDb = createDb(this.env.DB);
-						for (const tool of createCalendarTools(calClient, calDb)) {
-							registry.register(tool);
-						}
-					}
-					{
-						const schedulerDb = createDb(this.env.DB);
-						for (const tool of createSchedulerTools(
-							schedulerDb,
-							chatId,
-							threadId,
-						)) {
-							registry.register(tool);
-						}
-					}
+					const registry = await buildToolRegistry(this.env, chatId, threadId);
 
 					const llmStart = Date.now();
 					const result = await generateText({
