@@ -23,6 +23,7 @@ export async function buildToolRegistry(
 	threadId?: number,
 ): Promise<ToolRegistry> {
 	const registry = new ToolRegistry();
+	const db = createDb(env.DB);
 
 	const tavilyApiKey = env.TAVILY_API_KEY?.trim();
 	if (tavilyApiKey) {
@@ -33,8 +34,7 @@ export async function buildToolRegistry(
 		for (const tool of createFileTools(env.FILE_BUCKET)) {
 			registry.register(tool);
 		}
-		const emailDb = createDb(env.DB);
-		for (const tool of createEmailTools(emailDb, env.FILE_BUCKET)) {
+		for (const tool of createEmailTools(db, env.FILE_BUCKET)) {
 			registry.register(tool);
 		}
 	}
@@ -42,6 +42,7 @@ export async function buildToolRegistry(
 	const caldavUrl = env.CALDAV_URL?.trim();
 	const caldavUsername = env.CALDAV_USERNAME?.trim();
 	const caldavPassword = env.CALDAV_PASSWORD?.trim();
+	const caldavCalendarName = env.CALDAV_CALENDAR_NAME?.trim() || undefined;
 	if (caldavUrl) {
 		if (!caldavUsername || !caldavPassword) {
 			console.error(
@@ -53,10 +54,9 @@ export async function buildToolRegistry(
 					CALDAV_URL: caldavUrl,
 					CALDAV_USERNAME: caldavUsername,
 					CALDAV_PASSWORD: caldavPassword,
-					CALDAV_CALENDAR_NAME: env.CALDAV_CALENDAR_NAME,
+					CALDAV_CALENDAR_NAME: caldavCalendarName,
 				});
-				const calDb = createDb(env.DB);
-				for (const tool of createCalendarTools(calClient, calDb)) {
+				for (const tool of createCalendarTools(calClient, db)) {
 					registry.register(tool);
 				}
 			} catch (error) {
@@ -69,7 +69,6 @@ export async function buildToolRegistry(
 	}
 
 	if (chatId) {
-		const db = createDb(env.DB);
 		for (const tool of createSchedulerTools(db, chatId, threadId)) {
 			registry.register(tool);
 		}
