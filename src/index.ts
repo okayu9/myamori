@@ -9,13 +9,7 @@ import { ingestEmail } from "./email/ingestion";
 import { checkRateLimit } from "./rate-limit/checker";
 import type { SchedulerJobMessage } from "./scheduler/handler";
 import { handleScheduledEvent } from "./scheduler/handler";
-import { createCalendarTools } from "./tools/calendar";
-import { createCalendarClient } from "./tools/calendar-client";
-import { createEmailTools } from "./tools/email";
-import { createFileTools } from "./tools/files";
-import { ToolRegistry } from "./tools/registry";
-import { createSchedulerTools } from "./tools/scheduler";
-import { createWebSearchTool } from "./tools/web-search";
+import { buildToolRegistry } from "./tools/build-registry";
 
 type Bindings = {
 	TELEGRAM_BOT_TOKEN: string;
@@ -267,58 +261,6 @@ async function handleCallbackQuery(
 			approval.threadId ?? undefined,
 		);
 	}
-}
-
-async function buildToolRegistry(
-	env: Bindings,
-	chatId?: string,
-	threadId?: number,
-): Promise<ToolRegistry> {
-	const registry = new ToolRegistry();
-	if (env.TAVILY_API_KEY?.trim()) {
-		registry.register(createWebSearchTool(env.TAVILY_API_KEY));
-	}
-	if (env.FILE_BUCKET) {
-		for (const tool of createFileTools(env.FILE_BUCKET)) {
-			registry.register(tool);
-		}
-		const emailDb = createDb(env.DB);
-		for (const tool of createEmailTools(emailDb, env.FILE_BUCKET)) {
-			registry.register(tool);
-		}
-	}
-	if (env.CALDAV_URL?.trim()) {
-		if (!env.CALDAV_USERNAME?.trim() || !env.CALDAV_PASSWORD?.trim()) {
-			console.error(
-				"CALDAV_URL is set but credentials are missing; skipping calendar tools",
-			);
-		} else {
-			try {
-				const calClient = await createCalendarClient({
-					CALDAV_URL: env.CALDAV_URL,
-					CALDAV_USERNAME: env.CALDAV_USERNAME,
-					CALDAV_PASSWORD: env.CALDAV_PASSWORD,
-					CALDAV_CALENDAR_NAME: env.CALDAV_CALENDAR_NAME,
-				});
-				const calDb = createDb(env.DB);
-				for (const tool of createCalendarTools(calClient, calDb)) {
-					registry.register(tool);
-				}
-			} catch (error) {
-				console.error(
-					"Failed to initialize calendar tools; continuing without them:",
-					error,
-				);
-			}
-		}
-	}
-	if (chatId) {
-		const db = createDb(env.DB);
-		for (const tool of createSchedulerTools(db, chatId, threadId)) {
-			registry.register(tool);
-		}
-	}
-	return registry;
 }
 
 export default {
