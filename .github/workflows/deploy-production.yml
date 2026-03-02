@@ -1,0 +1,45 @@
+name: Deploy to Production
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+
+      - run: bun install --frozen-lockfile
+
+      - name: Generate wrangler.toml from template
+        run: envsubst < wrangler.toml.template > wrangler.toml
+        env:
+          D1_DATABASE_NAME: ${{ vars.D1_DATABASE_NAME }}
+          D1_DATABASE_ID: ${{ vars.D1_DATABASE_ID }}
+          R2_BUCKET_NAME: ${{ vars.R2_BUCKET_NAME }}
+          VECTORIZE_INDEX_NAME: ${{ vars.VECTORIZE_INDEX_NAME }}
+          KV_NAMESPACE_ID: ${{ vars.KV_NAMESPACE_ID }}
+          QUEUE_NAME: ${{ vars.QUEUE_NAME }}
+          STAGING_D1_DATABASE_NAME: ${{ vars.STAGING_D1_DATABASE_NAME }}
+          STAGING_D1_DATABASE_ID: ${{ vars.STAGING_D1_DATABASE_ID }}
+          STAGING_R2_BUCKET_NAME: ${{ vars.STAGING_R2_BUCKET_NAME }}
+          STAGING_KV_NAMESPACE_ID: ${{ vars.STAGING_KV_NAMESPACE_ID }}
+          STAGING_QUEUE_NAME: ${{ vars.STAGING_QUEUE_NAME }}
+
+      - name: Apply D1 migrations
+        run: bunx wrangler d1 migrations apply "${{ vars.D1_DATABASE_NAME }}" --remote
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Deploy to production
+        run: bunx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

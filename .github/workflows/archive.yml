@@ -3,6 +3,8 @@ name: OpenSpec Archive
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - "infra/**"
 
 permissions:
   contents: write
