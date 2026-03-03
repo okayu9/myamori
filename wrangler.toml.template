@@ -73,10 +73,6 @@ queue = "${STAGING_QUEUE_NAME}"
 binding = "VECTORIZE"
 index_name = "${STAGING_VECTORIZE_INDEX_NAME}"
 
-[[env.staging.queues.producers]]
-binding = "SCHEDULER_QUEUE"
-queue = "${STAGING_QUEUE_NAME}"
-
 [[env.staging.queues.consumers]]
 queue = "${STAGING_QUEUE_NAME}"
 max_batch_size = 10
