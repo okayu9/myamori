@@ -16,6 +16,9 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     environment: staging
+    concurrency:
+      group: deploy-staging
+      cancel-in-progress: true
     steps:
       - uses: actions/checkout@v4
 
@@ -36,7 +39,16 @@ jobs:
           STAGING_D1_DATABASE_ID: ${{ vars.STAGING_D1_DATABASE_ID }}
           STAGING_R2_BUCKET_NAME: ${{ vars.STAGING_R2_BUCKET_NAME }}
           STAGING_KV_NAMESPACE_ID: ${{ vars.STAGING_KV_NAMESPACE_ID }}
+          STAGING_VECTORIZE_INDEX_NAME: ${{ vars.STAGING_VECTORIZE_INDEX_NAME }}
           STAGING_QUEUE_NAME: ${{ vars.STAGING_QUEUE_NAME }}
+
+      - name: Validate generated wrangler.toml
+        run: |
+          if grep -qP '\$\{[^}]+\}' wrangler.toml; then
+            echo "::error::Unresolved placeholders found in wrangler.toml:"
+            grep -nP '\$\{[^}]+\}' wrangler.toml
+            exit 1
+          fi
 
       - name: Apply D1 migrations
         run: bunx wrangler d1 migrations apply "${{ vars.STAGING_D1_DATABASE_NAME }}" --remote --env staging

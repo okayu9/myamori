@@ -44,9 +44,9 @@ The project uses Drizzle ORM with D1, and migrations must run before code deploy
 
 ### 4. Path filters on existing workflows
 
-**Decision**: Add `paths-ignore: ['infra/**']` to `pr-checks.yml` and deploy workflows. Add `paths-ignore` for `openspec/**` on deploy workflows (spec changes don't need deploy).
+**Decision**: Use explicit `paths:` filter on `pr-checks.yml` to trigger only on app-related files. Add `paths-ignore: ['infra/**']` to `archive.yml`. Deploy workflows use `paths-ignore` for `infra/**`, `openspec/**`, and `**.md`.
 
-**Rationale**: Infrastructure spec requires pipeline independence. App changes shouldn't trigger infra pipelines and vice versa. Since `infra/` doesn't exist yet, this is forward-compatible.
+**Rationale**: Infrastructure spec requires pipeline independence. Positive `paths:` filtering on PR checks is more precise — avoids running CI on doc-only or OpenSpec-only changes. Deploy workflows use `paths-ignore` since they should trigger on most code changes.
 
 ### 5. GitHub Environment variables
 
@@ -55,7 +55,10 @@ The project uses Drizzle ORM with D1, and migrations must run before code deploy
 Variables per environment:
 - `D1_DATABASE_NAME`, `D1_DATABASE_ID`
 - `R2_BUCKET_NAME`
-- `STAGING_D1_DATABASE_NAME`, `STAGING_D1_DATABASE_ID`, `STAGING_R2_BUCKET_NAME` (staging env only, for the `[env.staging]` section in template)
+- `KV_NAMESPACE_ID`
+- `VECTORIZE_INDEX_NAME`
+- `QUEUE_NAME`
+- `STAGING_D1_DATABASE_NAME`, `STAGING_D1_DATABASE_ID`, `STAGING_R2_BUCKET_NAME`, `STAGING_KV_NAMESPACE_ID`, `STAGING_VECTORIZE_INDEX_NAME`, `STAGING_QUEUE_NAME` (staging env only, for the `[env.staging]` section in template)
 
 Secrets (shared or per-environment):
 - `CLOUDFLARE_API_TOKEN`
