@@ -177,20 +177,30 @@ Infrastructure changes follow the same branch → PR → merge flow. Path-filter
 
 ### Output → GitHub Variables Mapping
 
-After `tofu apply`, copy resource IDs to GitHub Environment Variables:
+After `tofu apply`, copy resource IDs to GitHub Environment Variables.
+Both environments use the **same 6 variable names** — the deploy workflows map them to the correct template placeholders.
 
-| OpenTofu Output | GitHub Variable | Environment |
-|----------------|----------------|-------------|
-| `d1_database_name` | `D1_DATABASE_NAME` | production |
-| `d1_database_id` | `D1_DATABASE_ID` | production |
-| `r2_bucket_name` | `R2_BUCKET_NAME` | production |
-| `kv_namespace_id` | `KV_NAMESPACE_ID` | production |
-| `queue_name` | `QUEUE_NAME` | production |
-| `staging_d1_database_name` | `STAGING_D1_DATABASE_NAME` | staging |
-| `staging_d1_database_id` | `STAGING_D1_DATABASE_ID` | staging |
-| `staging_r2_bucket_name` | `STAGING_R2_BUCKET_NAME` | staging |
-| `staging_kv_namespace_id` | `STAGING_KV_NAMESPACE_ID` | staging |
-| `staging_queue_name` | `STAGING_QUEUE_NAME` | staging |
+**production** Environment (from `tofu output`):
+
+| GitHub Variable | OpenTofu Output |
+|----------------|----------------|
+| `D1_DATABASE_NAME` | `d1_database_name` |
+| `D1_DATABASE_ID` | `d1_database_id` |
+| `R2_BUCKET_NAME` | `r2_bucket_name` |
+| `KV_NAMESPACE_ID` | `kv_namespace_id` |
+| `QUEUE_NAME` | `queue_name` |
+| `VECTORIZE_INDEX_NAME` | (manual: `myamori-memories`) |
+
+**staging** Environment (from `tofu output`):
+
+| GitHub Variable | OpenTofu Output |
+|----------------|----------------|
+| `D1_DATABASE_NAME` | `staging_d1_database_name` |
+| `D1_DATABASE_ID` | `staging_d1_database_id` |
+| `R2_BUCKET_NAME` | `staging_r2_bucket_name` |
+| `KV_NAMESPACE_ID` | `staging_kv_namespace_id` |
+| `QUEUE_NAME` | `staging_queue_name` |
+| `VECTORIZE_INDEX_NAME` | (manual: `myamori-memories-staging`) |
 
 ### Required Secrets (CI)
 
