@@ -8,16 +8,18 @@ export interface MemoryEntry {
 export function buildSystemPrompt(
 	tools?: ToolDefinition[],
 	memories?: MemoryEntry[],
+	timezone?: string,
 ): string {
-	const now = new Date().toISOString();
+	const now = new Date();
 	const toolsSection = formatToolsSection(tools);
 	const hasMediumRisk = tools?.some((t) => t.riskLevel === "medium") ?? false;
 	const memoriesSection = formatMemoriesSection(memories);
+	const dateTimeSection = formatDateTimeSection(now, timezone);
 
 	return `You are Myamori, a personal AI assistant.
 
 ## Current Date/Time
-${now}
+${dateTimeSection}
 
 ## Available Tools
 ${toolsSection}
@@ -25,7 +27,25 @@ ${memoriesSection}
 ## Instructions
 - Respond concisely and helpfully.
 - If the user's message is in a specific language, respond in the same language.
+- Cron expressions are always in UTC. Convert the user's local time to UTC when creating scheduled jobs.
 ${hasMediumRisk ? "- When you use a medium-risk tool, always report the action you took in your reply to the user.\n" : ""}`;
+}
+
+function formatDateTimeSection(now: Date, timezone?: string): string {
+	const utc = now.toISOString();
+	if (!timezone || timezone === "UTC") {
+		return utc;
+	}
+	const local = now.toLocaleString("en-CA", {
+		timeZone: timezone,
+		year: "numeric",
+		month: "2-digit",
+		day: "2-digit",
+		hour: "2-digit",
+		minute: "2-digit",
+		hour12: false,
+	});
+	return `UTC: ${utc}\nLocal (${timezone}): ${local}`;
 }
 
 function formatMemoriesSection(memories?: MemoryEntry[]): string {

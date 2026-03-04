@@ -98,4 +98,26 @@ describe("buildSystemPrompt", () => {
 		const prompt = buildSystemPrompt(undefined, []);
 		expect(prompt).not.toContain("Relevant Memories");
 	});
+
+	it("shows only UTC when no timezone is provided", () => {
+		const prompt = buildSystemPrompt();
+		expect(prompt).toMatch(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z/);
+		expect(prompt).not.toContain("Local (");
+	});
+
+	it("shows both UTC and local time when timezone is provided", () => {
+		const prompt = buildSystemPrompt(undefined, undefined, "Asia/Tokyo");
+		expect(prompt).toContain("UTC:");
+		expect(prompt).toContain("Local (Asia/Tokyo):");
+	});
+
+	it("shows only UTC when timezone is UTC", () => {
+		const prompt = buildSystemPrompt(undefined, undefined, "UTC");
+		expect(prompt).not.toContain("Local (");
+	});
+
+	it("includes cron UTC instruction", () => {
+		const prompt = buildSystemPrompt();
+		expect(prompt).toContain("Cron expressions are always in UTC");
+	});
 });

@@ -36,6 +36,7 @@ export interface AgentWorkflowEnv {
 	CALDAV_USERNAME?: string;
 	CALDAV_PASSWORD?: string;
 	CALDAV_CALENDAR_NAME?: string;
+	TIMEZONE?: string;
 	FILE_BUCKET?: R2Bucket;
 	SCHEDULER_QUEUE?: Queue;
 	VECTORIZE?: VectorizeIndex;
@@ -99,6 +100,7 @@ export class AgentWorkflow extends WorkflowEntrypoint<
 						system: buildSystemPrompt(
 							registry.getAll(),
 							memories.length > 0 ? memories : undefined,
+							this.env.TIMEZONE,
 						),
 						messages: [
 							...history.map((m) => ({

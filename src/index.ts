@@ -24,6 +24,7 @@ type Bindings = {
 	CALDAV_USERNAME?: string;
 	CALDAV_PASSWORD?: string;
 	CALDAV_CALENDAR_NAME?: string;
+	TIMEZONE?: string;
 	EMAIL_NOTIFICATION_CHAT_ID?: string;
 	FILE_BUCKET?: R2Bucket;
 	SCHEDULER_QUEUE: Queue<SchedulerJobMessage>;
