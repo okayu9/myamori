@@ -214,6 +214,19 @@ describe("markdownToTelegramHtml", () => {
 		);
 	});
 
+	it("escapes double quotes in link URLs", () => {
+		expect(markdownToTelegramHtml('[test](https://x.com/a"b)')).toBe(
+			'<a href="https://x.com/a&quot;b">test</a>',
+		);
+	});
+
+	it("converts code blocks with extra whitespace after language tag", () => {
+		const input = "```js \nconst x = 1;\n```";
+		expect(markdownToTelegramHtml(input)).toBe(
+			"<pre><code>const x = 1;</code></pre>",
+		);
+	});
+
 	it("escapes HTML entities", () => {
 		expect(markdownToTelegramHtml("a < b & c > d")).toBe(
 			"a &lt; b &amp; c &gt; d",

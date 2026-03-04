@@ -93,7 +93,11 @@ export class TelegramAdapter implements ChannelAdapter {
 		if (data.ok) return;
 
 		// If HTML parsing failed, retry as plain text
-		if (data.error_code === 400) {
+		const isParseError =
+			data.error_code === 400 &&
+			(data.description?.includes("can't parse entities") ||
+				data.description?.includes("Unsupported start tag"));
+		if (isParseError) {
 			const plainResponse = await fetch(url, {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
@@ -156,7 +160,7 @@ export function markdownToTelegramHtml(text: string): string {
 
 	// Code blocks: ```lang\n...\n``` → <pre><code>...</code></pre>
 	html = html.replace(
-		/```(?:\w*)\n([\s\S]*?)```/g,
+		/```(?:\w*)\s*\n([\s\S]*?)```/g,
 		(_, code) => `<pre><code>${code.trimEnd()}</code></pre>`,
 	);
 
@@ -170,7 +174,10 @@ export function markdownToTelegramHtml(text: string): string {
 	html = html.replace(/(?<!\w)\*([^*]+)\*(?!\w)/g, "<i>$1</i>");
 
 	// Links: [text](url) → <a href="url">text</a>
-	html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
+	html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, linkText, url) => {
+		const safeUrl = url.replace(/"/g, "&quot;");
+		return `<a href="${safeUrl}">${linkText}</a>`;
+	});
 
 	return html;
 }
