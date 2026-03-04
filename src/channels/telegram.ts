@@ -45,26 +45,7 @@ export class TelegramAdapter implements ChannelAdapter {
 		text: string,
 		threadId?: number,
 	): Promise<void> {
-		const url = `https://api.telegram.org/bot${this.botToken}/sendMessage`;
-		const body: Record<string, unknown> = {
-			chat_id: chatId,
-			text,
-		};
-		if (threadId !== undefined) {
-			body.message_thread_id = threadId;
-		}
-		const response = await fetch(url, {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify(body),
-		});
-		const data: { ok: boolean; error_code?: number; description?: string } =
-			await response.json();
-		if (!data.ok) {
-			throw new Error(
-				`Telegram sendMessage failed (${data.error_code}): ${data.description}`,
-			);
-		}
+		await this.sendTelegramMessage({ chat_id: chatId, text }, threadId);
 	}
 
 	async sendMessageWithInlineKeyboard(
@@ -73,34 +54,67 @@ export class TelegramAdapter implements ChannelAdapter {
 		buttons: Array<{ text: string; callbackData: string }>,
 		threadId?: number,
 	): Promise<void> {
-		const url = `https://api.telegram.org/bot${this.botToken}/sendMessage`;
-		const body: Record<string, unknown> = {
-			chat_id: chatId,
-			text,
-			reply_markup: {
-				inline_keyboard: [
-					buttons.map((b) => ({
-						text: b.text,
-						callback_data: b.callbackData,
-					})),
-				],
+		await this.sendTelegramMessage(
+			{
+				chat_id: chatId,
+				text,
+				reply_markup: {
+					inline_keyboard: [
+						buttons.map((b) => ({
+							text: b.text,
+							callback_data: b.callbackData,
+						})),
+					],
+				},
 			},
-		};
+			threadId,
+		);
+	}
+
+	private async sendTelegramMessage(
+		body: Record<string, unknown>,
+		threadId?: number,
+	): Promise<void> {
+		const url = `https://api.telegram.org/bot${this.botToken}/sendMessage`;
 		if (threadId !== undefined) {
 			body.message_thread_id = threadId;
 		}
+
+		// Try with Markdown first, fall back to plain text on parse error
+		const markdownBody = { ...body, parse_mode: "Markdown" };
 		const response = await fetch(url, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify(body),
+			body: JSON.stringify(markdownBody),
 		});
 		const data: { ok: boolean; error_code?: number; description?: string } =
 			await response.json();
-		if (!data.ok) {
-			throw new Error(
-				`Telegram sendMessage failed (${data.error_code}): ${data.description}`,
-			);
+
+		if (data.ok) return;
+
+		// If Markdown parsing failed (400), retry without parse_mode
+		if (data.error_code === 400) {
+			const plainResponse = await fetch(url, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify(body),
+			});
+			const plainData: {
+				ok: boolean;
+				error_code?: number;
+				description?: string;
+			} = await plainResponse.json();
+			if (!plainData.ok) {
+				throw new Error(
+					`Telegram sendMessage failed (${plainData.error_code}): ${plainData.description}`,
+				);
+			}
+			return;
 		}
+
+		throw new Error(
+			`Telegram sendMessage failed (${data.error_code}): ${data.description}`,
+		);
 	}
 
 	async answerCallbackQuery(
