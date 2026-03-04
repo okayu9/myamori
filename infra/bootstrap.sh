@@ -19,7 +19,7 @@ if [ -z "${CLOUDFLARE_ACCOUNT_ID:-}" ]; then
 fi
 
 echo "==> Checking if R2 bucket '${STATE_BUCKET}' exists..."
-if bunx wrangler r2 bucket list 2>/dev/null | grep -q "\"${STATE_BUCKET}\""; then
+if bunx wrangler r2 bucket list --json 2>/dev/null | bunx -bun jq -e --arg name "${STATE_BUCKET}" '.[] | select(.name == $name)' >/dev/null 2>&1; then
   echo "Bucket '${STATE_BUCKET}' already exists. Skipping creation."
 else
   echo "==> Creating R2 bucket '${STATE_BUCKET}'..."

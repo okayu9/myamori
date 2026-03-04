@@ -6,7 +6,7 @@ All Cloudflare resources (D1, R2, KV, Queues, Vectorize, Email Routing, DNS) are
 
 - Add `infra/` directory with OpenTofu configuration files (`main.tf`, `variables.tf`, `outputs.tf`, `backend.tf`, `versions.tf`)
 - Add `infra/bootstrap.sh` script to create the R2 state bucket (avoids circular dependency)
-- Declare all Cloudflare resources: D1, R2, KV, Queues, Vectorize, Email Routing rules, DNS records
+- Declare Cloudflare resources in OpenTofu: D1, R2, KV, Queues, Email Routing rules, DNS records (Vectorize is not supported by the provider and remains manual)
 - Export resource IDs as OpenTofu outputs for use in `wrangler.toml`
 - Add `infra-plan.yml` GitHub Actions workflow: posts `tofu plan` as PR comment on `infra/**` changes
 - Add `infra-apply.yml` GitHub Actions workflow: runs `tofu apply` on merge to `main` for `infra/**` changes

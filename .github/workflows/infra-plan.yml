@@ -18,9 +18,9 @@ jobs:
       group: infra-plan-${{ github.event.pull_request.number }}
       cancel-in-progress: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
-      - uses: opentofu/setup-opentofu@v1
+      - uses: opentofu/setup-opentofu@9d84900f3238fab8cd84ce47d658d25dd008be2f # v1
 
       - name: Initialize OpenTofu
         working-directory: infra
@@ -34,7 +34,10 @@ jobs:
         id: plan
         working-directory: infra
         continue-on-error: true
-        run: tofu plan -input=false -no-color 2>&1 | tee plan_output.txt
+        shell: bash
+        run: |
+          set -o pipefail
+          tofu plan -input=false -no-color 2>&1 | tee plan_output.txt
         env:
           TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           TF_VAR_cloudflare_account_id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -62,7 +65,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Post plan to PR
-        uses: peter-evans/create-or-update-comment@v4
+        uses: peter-evans/create-or-update-comment@71345be0265236311c031f5c7866368bd1eff043 # v4
         with:
           issue-number: ${{ github.event.pull_request.number }}
           body: |

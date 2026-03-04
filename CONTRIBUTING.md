@@ -154,10 +154,16 @@ export AWS_ACCESS_KEY_ID="<r2-access-key-id>"
 export AWS_SECRET_ACCESS_KEY="<r2-secret-access-key>"
 export AWS_ENDPOINT_URL_S3="https://<account-id>.r2.cloudflarestorage.com"
 
-# 4. Initialize
+# 4. Set Terraform input variables
+export TF_VAR_cloudflare_api_token="<your-api-token>"
+export TF_VAR_cloudflare_account_id="<your-account-id>"
+export TF_VAR_domain="<your-domain>"
+export TF_VAR_zone_id="<your-zone-id>"
+
+# 5. Initialize
 cd infra && tofu init
 
-# 5. Import existing resources (if they already exist)
+# 6. Import existing resources (if they already exist)
 tofu import cloudflare_d1_database.production <database-id>
 # ... see bootstrap.sh output for all import commands
 ```

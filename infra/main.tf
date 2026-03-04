@@ -56,32 +56,34 @@ resource "cloudflare_queue" "staging" {
 
 # ============================================================================
 # DNS Records (MX for Email Workers)
+# Cloudflare Email Routing requires these three MX records.
+# Priority values are assigned by Cloudflare; resource names use route number.
 # ============================================================================
 
-resource "cloudflare_dns_record" "mx_primary" {
+resource "cloudflare_dns_record" "mx_route1" {
   zone_id  = var.zone_id
   name     = var.domain
   type     = "MX"
   content  = "route1.mx.cloudflare.net"
-  priority = 69
-  ttl      = 1
-}
-
-resource "cloudflare_dns_record" "mx_secondary" {
-  zone_id  = var.zone_id
-  name     = var.domain
-  type     = "MX"
-  content  = "route2.mx.cloudflare.net"
   priority = 12
   ttl      = 1
 }
 
-resource "cloudflare_dns_record" "mx_tertiary" {
+resource "cloudflare_dns_record" "mx_route2" {
+  zone_id  = var.zone_id
+  name     = var.domain
+  type     = "MX"
+  content  = "route2.mx.cloudflare.net"
+  priority = 27
+  ttl      = 1
+}
+
+resource "cloudflare_dns_record" "mx_route3" {
   zone_id  = var.zone_id
   name     = var.domain
   type     = "MX"
   content  = "route3.mx.cloudflare.net"
-  priority = 27
+  priority = 69
   ttl      = 1
 }
 
@@ -92,6 +94,21 @@ resource "cloudflare_dns_record" "mx_tertiary" {
 resource "cloudflare_email_routing_dns" "main" {
   zone_id = var.zone_id
   name    = var.domain
+}
+
+resource "cloudflare_email_routing_rule" "forward_to_worker" {
+  zone_id = var.zone_id
+  enabled = true
+  name    = "Forward to Worker"
+
+  matchers = [{
+    type  = "all"
+  }]
+
+  actions = [{
+    type  = "worker"
+    value = ["myamori"]
+  }]
 }
 
 # ============================================================================

@@ -53,9 +53,9 @@ backend "s3" {
 
 ### 3. Bootstrap script approach
 
-**Decision**: A bash script that uses `wrangler` CLI to create the state R2 bucket and outputs the necessary backend configuration.
+**Decision**: A bash script that uses `wrangler` CLI to create the state R2 bucket. The R2 API token for the S3 backend must be created manually via the Cloudflare dashboard.
 
-**Rationale**: `wrangler r2 bucket create` is the simplest way to create an R2 bucket. The script is idempotent (checks if bucket exists first). It also generates an R2 API token for the S3 backend via the Cloudflare API.
+**Rationale**: `wrangler r2 bucket create` is the simplest way to create an R2 bucket. The script is idempotent (checks if bucket exists first). R2 API token creation requires dashboard access, so the script outputs instructions for the manual step.
 
 ### 4. Cloudflare provider v5
 
