@@ -54,14 +54,29 @@ resource "cloudflare_queue" "staging" {
   queue_name = "myamori-scheduler-staging"
 }
 
+locals {
+  create_email_resources = var.domain != "" && var.zone_id != ""
+}
+
+resource "terraform_data" "validate_email_config" {
+  count = var.domain != "" && var.zone_id == "" ? 1 : 0
+
+  lifecycle {
+    precondition {
+      condition     = false
+      error_message = "zone_id is required when domain is set."
+    }
+  }
+}
+
 # ============================================================================
 # DNS Records (MX for Email Workers)
 # Cloudflare Email Routing requires these three MX records.
-# Only created when domain and zone_id are provided.
+# Only created when both domain and zone_id are provided.
 # ============================================================================
 
 resource "cloudflare_dns_record" "mx_route1" {
-  count    = var.zone_id != "" ? 1 : 0
+  count    = local.create_email_resources ? 1 : 0
   zone_id  = var.zone_id
   name     = var.domain
   type     = "MX"
@@ -71,7 +86,7 @@ resource "cloudflare_dns_record" "mx_route1" {
 }
 
 resource "cloudflare_dns_record" "mx_route2" {
-  count    = var.zone_id != "" ? 1 : 0
+  count    = local.create_email_resources ? 1 : 0
   zone_id  = var.zone_id
   name     = var.domain
   type     = "MX"
@@ -81,7 +96,7 @@ resource "cloudflare_dns_record" "mx_route2" {
 }
 
 resource "cloudflare_dns_record" "mx_route3" {
-  count    = var.zone_id != "" ? 1 : 0
+  count    = local.create_email_resources ? 1 : 0
   zone_id  = var.zone_id
   name     = var.domain
   type     = "MX"
@@ -96,13 +111,13 @@ resource "cloudflare_dns_record" "mx_route3" {
 # ============================================================================
 
 resource "cloudflare_email_routing_dns" "main" {
-  count   = var.zone_id != "" ? 1 : 0
+  count   = local.create_email_resources ? 1 : 0
   zone_id = var.zone_id
   name    = var.domain
 }
 
 resource "cloudflare_email_routing_rule" "forward_to_worker" {
-  count   = var.zone_id != "" ? 1 : 0
+  count   = local.create_email_resources ? 1 : 0
   zone_id = var.zone_id
   enabled = true
   name    = "Forward to Worker"
