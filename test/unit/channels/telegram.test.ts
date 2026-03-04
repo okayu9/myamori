@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
-	TelegramAdapter,
 	markdownToTelegramHtml,
+	TelegramAdapter,
 } from "../../../src/channels/telegram";
 
 const adapter = new TelegramAdapter("test-bot-token", "test-webhook-secret");

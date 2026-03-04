@@ -170,10 +170,7 @@ export function markdownToTelegramHtml(text: string): string {
 	html = html.replace(/(?<!\w)\*([^*]+)\*(?!\w)/g, "<i>$1</i>");
 
 	// Links: [text](url) → <a href="url">text</a>
-	html = html.replace(
-		/\[([^\]]+)\]\(([^)]+)\)/g,
-		'<a href="$2">$1</a>',
-	);
+	html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
 
 	return html;
 }
