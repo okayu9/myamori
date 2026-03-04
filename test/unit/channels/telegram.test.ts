@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { TelegramAdapter } from "../../../src/channels/telegram";
+import {
+	TelegramAdapter,
+	markdownToTelegramHtml,
+} from "../../../src/channels/telegram";
 
 const adapter = new TelegramAdapter("test-bot-token", "test-webhook-secret");
 
@@ -176,5 +179,54 @@ describe("TelegramAdapter", () => {
 			expect(msg).not.toBeNull();
 			expect(msg?.attachments).toEqual([{ type: "photo", fileId: "large" }]);
 		});
+	});
+});
+
+describe("markdownToTelegramHtml", () => {
+	it("converts bold **text** to <b>text</b>", () => {
+		expect(markdownToTelegramHtml("This is **bold** text")).toBe(
+			"This is <b>bold</b> text",
+		);
+	});
+
+	it("converts italic *text* to <i>text</i>", () => {
+		expect(markdownToTelegramHtml("This is *italic* text")).toBe(
+			"This is <i>italic</i> text",
+		);
+	});
+
+	it("converts inline code to <code>", () => {
+		expect(markdownToTelegramHtml("Use `console.log`")).toBe(
+			"Use <code>console.log</code>",
+		);
+	});
+
+	it("converts code blocks to <pre><code>", () => {
+		const input = "```js\nconst x = 1;\n```";
+		expect(markdownToTelegramHtml(input)).toBe(
+			"<pre><code>const x = 1;</code></pre>",
+		);
+	});
+
+	it("converts links to <a> tags", () => {
+		expect(markdownToTelegramHtml("[Google](https://google.com)")).toBe(
+			'<a href="https://google.com">Google</a>',
+		);
+	});
+
+	it("escapes HTML entities", () => {
+		expect(markdownToTelegramHtml("a < b & c > d")).toBe(
+			"a &lt; b &amp; c &gt; d",
+		);
+	});
+
+	it("handles bold and italic together", () => {
+		expect(markdownToTelegramHtml("**bold** and *italic*")).toBe(
+			"<b>bold</b> and <i>italic</i>",
+		);
+	});
+
+	it("passes plain text through unchanged", () => {
+		expect(markdownToTelegramHtml("Hello world")).toBe("Hello world");
 	});
 });

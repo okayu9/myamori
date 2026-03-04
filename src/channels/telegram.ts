@@ -79,23 +79,21 @@ export class TelegramAdapter implements ChannelAdapter {
 		const baseBody =
 			threadId !== undefined ? { ...body, message_thread_id: threadId } : body;
 
-		// Try with Markdown first, fall back to plain text on parse error
-		const markdownBody = { ...baseBody, parse_mode: "Markdown" };
+		// Convert standard Markdown to Telegram HTML and try HTML parse_mode
+		const htmlText = markdownToTelegramHtml(String(baseBody.text));
+		const htmlBody = { ...baseBody, text: htmlText, parse_mode: "HTML" };
 		const response = await fetch(url, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify(markdownBody),
+			body: JSON.stringify(htmlBody),
 		});
 		const data: { ok: boolean; error_code?: number; description?: string } =
 			await response.json();
 
 		if (data.ok) return;
 
-		// If Markdown parsing failed, retry without parse_mode
-		const isParseError =
-			data.error_code === 400 &&
-			data.description?.toLowerCase().includes("can't parse");
-		if (isParseError) {
+		// If HTML parsing failed, retry as plain text
+		if (data.error_code === 400) {
 			const plainResponse = await fetch(url, {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
@@ -143,6 +141,41 @@ export class TelegramAdapter implements ChannelAdapter {
 			);
 		}
 	}
+}
+
+/**
+ * Convert standard Markdown to Telegram-compatible HTML.
+ * Handles: bold, italic, inline code, code blocks, and links.
+ */
+export function markdownToTelegramHtml(text: string): string {
+	// Escape HTML entities first
+	let html = text
+		.replace(/&/g, "&amp;")
+		.replace(/</g, "&lt;")
+		.replace(/>/g, "&gt;");
+
+	// Code blocks: ```lang\n...\n``` → <pre><code>...</code></pre>
+	html = html.replace(
+		/```(?:\w*)\n([\s\S]*?)```/g,
+		(_, code) => `<pre><code>${code.trimEnd()}</code></pre>`,
+	);
+
+	// Inline code: `...` → <code>...</code>
+	html = html.replace(/`([^`]+)`/g, "<code>$1</code>");
+
+	// Bold: **...** → <b>...</b>
+	html = html.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
+
+	// Italic: *...* → <i>...</i>  (single asterisk, after bold replacement)
+	html = html.replace(/(?<!\w)\*([^*]+)\*(?!\w)/g, "<i>$1</i>");
+
+	// Links: [text](url) → <a href="url">text</a>
+	html = html.replace(
+		/\[([^\]]+)\]\(([^)]+)\)/g,
+		'<a href="$2">$1</a>',
+	);
+
+	return html;
 }
 
 function extractAttachments(msg: TelegramMessage): Attachment[] {
