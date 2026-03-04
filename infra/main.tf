@@ -137,5 +137,5 @@ resource "cloudflare_email_routing_rule" "forward_to_worker" {
 # ============================================================================
 # Note: Cloudflare provider v5 does not have a cloudflare_vectorize_index
 # resource. Vectorize indexes must be created manually:
-#   bunx wrangler vectorize create myamori-memory --dimensions 768 --metric cosine
-#   bunx wrangler vectorize create myamori-memory-staging --dimensions 768 --metric cosine
+#   bunx wrangler vectorize create myamori-memories --dimensions 1024 --metric cosine
+#   bunx wrangler vectorize create myamori-memories-staging --dimensions 1024 --metric cosine
