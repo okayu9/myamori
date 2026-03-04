@@ -40,7 +40,7 @@ export function createSchedulerTools(
 	const createScheduledJob = defineTool({
 		name: "create_scheduled_job",
 		description:
-			"Create a new scheduled job. Uses a 5-field cron expression (minute hour day-of-month month day-of-week). Supports numbers, *, commas (,), ranges (-), and steps (/). Examples: '0 9 * * *' (daily 9am UTC), '*/30 * * * *' (every 30 min), '0 9 * * 1-5' (weekdays 9am UTC). Requires approval.",
+			"Create a new scheduled job. Cron expressions are always in UTC — convert local time to UTC before setting. Uses a 5-field cron expression (minute hour day-of-month month day-of-week). Supports numbers, *, commas (,), ranges (-), and steps (/). Examples: '0 0 * * *' (daily 9am JST = 0am UTC), '*/30 * * * *' (every 30 min), '0 0 * * 1-5' (weekdays 9am JST = 0am UTC). Requires approval.",
 		inputSchema: z.object({
 			name: z.string().describe("Human-readable name for the job"),
 			cronExpr: z
