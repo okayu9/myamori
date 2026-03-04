@@ -63,7 +63,7 @@ resource "terraform_data" "validate_email_config" {
 
   lifecycle {
     precondition {
-      condition     = false
+      condition     = var.zone_id != ""
       error_message = "zone_id is required when domain is set."
     }
   }
