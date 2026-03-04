@@ -116,6 +116,12 @@ describe("buildSystemPrompt", () => {
 		expect(prompt).not.toContain("Local (");
 	});
 
+	it("falls back to UTC for invalid timezone", () => {
+		const prompt = buildSystemPrompt(undefined, undefined, "Invalid/Zone");
+		expect(prompt).not.toContain("Local (");
+		expect(prompt).toMatch(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z/);
+	});
+
 	it("includes cron UTC instruction", () => {
 		const prompt = buildSystemPrompt();
 		expect(prompt).toContain("Cron expressions are always in UTC");

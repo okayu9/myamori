@@ -33,19 +33,24 @@ ${hasMediumRisk ? "- When you use a medium-risk tool, always report the action y
 
 function formatDateTimeSection(now: Date, timezone?: string): string {
 	const utc = now.toISOString();
-	if (!timezone || timezone === "UTC") {
+	const tz = timezone?.trim();
+	if (!tz || tz.toUpperCase() === "UTC") {
 		return utc;
 	}
-	const local = now.toLocaleString("en-CA", {
-		timeZone: timezone,
-		year: "numeric",
-		month: "2-digit",
-		day: "2-digit",
-		hour: "2-digit",
-		minute: "2-digit",
-		hour12: false,
-	});
-	return `UTC: ${utc}\nLocal (${timezone}): ${local}`;
+	try {
+		const local = now.toLocaleString("en-CA", {
+			timeZone: tz,
+			year: "numeric",
+			month: "2-digit",
+			day: "2-digit",
+			hour: "2-digit",
+			minute: "2-digit",
+			hour12: false,
+		});
+		return `UTC: ${utc}\nLocal (${tz}): ${local}`;
+	} catch {
+		return utc;
+	}
 }
 
 function formatMemoriesSection(memories?: MemoryEntry[]): string {
