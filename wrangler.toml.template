@@ -1,6 +1,7 @@
 name = "myamori"
 main = "src/index.ts"
 compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
 
 # Secrets (set via `wrangler secret put` or GitHub Secrets in CI):
 # - TELEGRAM_BOT_TOKEN
@@ -14,6 +15,10 @@ binding = "DB"
 database_name = "${D1_DATABASE_NAME}"
 database_id = "${D1_DATABASE_ID}"
 migrations_dir = "drizzle/migrations"
+
+[[kv_namespaces]]
+binding = "RATE_LIMIT_KV"
+id = "${KV_NAMESPACE_ID}"
 
 [[workflows]]
 name = "agent-workflow"
@@ -31,6 +36,18 @@ index_name = "${VECTORIZE_INDEX_NAME}"
 [ai]
 binding = "AI"
 
+[[queues.producers]]
+binding = "SCHEDULER_QUEUE"
+queue = "${QUEUE_NAME}"
+
+[[queues.consumers]]
+queue = "${QUEUE_NAME}"
+max_batch_size = 10
+max_retries = 3
+
+[triggers]
+crons = ["*/5 * * * *"]
+
 [env.staging]
 name = "myamori-staging"
 
@@ -40,6 +57,23 @@ database_name = "${STAGING_D1_DATABASE_NAME}"
 database_id = "${STAGING_D1_DATABASE_ID}"
 migrations_dir = "drizzle/migrations"
 
+[[env.staging.kv_namespaces]]
+binding = "RATE_LIMIT_KV"
+id = "${STAGING_KV_NAMESPACE_ID}"
+
 [[env.staging.r2_buckets]]
 binding = "BUCKET"
 bucket_name = "${STAGING_R2_BUCKET_NAME}"
+
+[[env.staging.queues.producers]]
+binding = "SCHEDULER_QUEUE"
+queue = "${STAGING_QUEUE_NAME}"
+
+[[env.staging.vectorize]]
+binding = "VECTORIZE"
+index_name = "${STAGING_VECTORIZE_INDEX_NAME}"
+
+[[env.staging.queues.consumers]]
+queue = "${STAGING_QUEUE_NAME}"
+max_batch_size = 10
+max_retries = 3

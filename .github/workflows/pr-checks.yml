@@ -3,6 +3,17 @@ name: PR Checks
 on:
   pull_request:
     branches: [main]
+    paths:
+      - "src/**"
+      - "test/**"
+      - "drizzle/**"
+      - "package.json"
+      - "bun.lock"
+      - "tsconfig.json"
+      - "biome.json"
+      - "vitest.config.ts"
+      - "wrangler.toml.template"
+      - "wrangler.test.toml"
 
 permissions:
   contents: read
