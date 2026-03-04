@@ -135,6 +135,72 @@ Deployment uses two environments managed via [GitHub Environments](https://docs.
 | `staging` | Automatic on merge to `main` | Verify with test Telegram bot |
 | `production` | Manual (`workflow_dispatch`) | Live deployment |
 
+## Infrastructure (OpenTofu)
+
+Cloudflare resources (D1, R2, KV, Queues, DNS, Email Routing) are managed declaratively with [OpenTofu](https://opentofu.org/) in the `infra/` directory. State is stored in a dedicated R2 bucket.
+
+> **Note**: Vectorize indexes are not yet supported by the Cloudflare provider and must be created manually with `wrangler vectorize create`.
+
+### First-Time Setup
+
+```sh
+# 1. Bootstrap — create the R2 state bucket
+CLOUDFLARE_ACCOUNT_ID=<your-account-id> ./infra/bootstrap.sh
+
+# 2. Create an R2 API token (see bootstrap output for instructions)
+
+# 3. Set backend credentials
+export AWS_ACCESS_KEY_ID="<r2-access-key-id>"
+export AWS_SECRET_ACCESS_KEY="<r2-secret-access-key>"
+export AWS_ENDPOINT_URL_S3="https://<account-id>.r2.cloudflarestorage.com"
+
+# 4. Set Terraform input variables
+export TF_VAR_cloudflare_api_token="<your-api-token>"
+export TF_VAR_cloudflare_account_id="<your-account-id>"
+export TF_VAR_domain="<your-domain>"
+export TF_VAR_zone_id="<your-zone-id>"
+
+# 5. Initialize
+cd infra && tofu init
+
+# 6. Import existing resources (if they already exist)
+tofu import cloudflare_d1_database.production <database-id>
+# ... see bootstrap.sh output for all import commands
+```
+
+### Making Infrastructure Changes
+
+Infrastructure changes follow the same branch → PR → merge flow. Path-filtered CI handles the rest:
+
+- **PR**: `infra-plan.yml` runs `tofu plan` and posts the result as a PR comment
+- **Merge to main**: `infra-apply.yml` runs `tofu apply -auto-approve`
+
+### Output → GitHub Variables Mapping
+
+After `tofu apply`, copy resource IDs to GitHub Environment Variables:
+
+| OpenTofu Output | GitHub Variable | Environment |
+|----------------|----------------|-------------|
+| `d1_database_name` | `D1_DATABASE_NAME` | production |
+| `d1_database_id` | `D1_DATABASE_ID` | production |
+| `r2_bucket_name` | `R2_BUCKET_NAME` | production |
+| `kv_namespace_id` | `KV_NAMESPACE_ID` | production |
+| `queue_name` | `QUEUE_NAME` | production |
+| `staging_d1_database_name` | `STAGING_D1_DATABASE_NAME` | staging |
+| `staging_d1_database_id` | `STAGING_D1_DATABASE_ID` | staging |
+| `staging_r2_bucket_name` | `STAGING_R2_BUCKET_NAME` | staging |
+| `staging_kv_namespace_id` | `STAGING_KV_NAMESPACE_ID` | staging |
+| `staging_queue_name` | `STAGING_QUEUE_NAME` | staging |
+
+### Required Secrets (CI)
+
+| Secret | Used By | Purpose |
+|--------|---------|---------|
+| `CLOUDFLARE_API_TOKEN` | Both infra & deploy | Cloudflare API access |
+| `CLOUDFLARE_ACCOUNT_ID` | Both infra & deploy | Account identifier |
+| `R2_STATE_ACCESS_KEY_ID` | Infra only | R2 state backend auth |
+| `R2_STATE_SECRET_ACCESS_KEY` | Infra only | R2 state backend auth |
+
 ## Releases
 
 After verifying a production deploy, tag the commit and create a [GitHub Release](https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases). Tagged releases are the only commits considered stable — forks and external deployments are expected to use them, not the HEAD of `main`.
