@@ -76,12 +76,11 @@ export class TelegramAdapter implements ChannelAdapter {
 		threadId?: number,
 	): Promise<void> {
 		const url = `https://api.telegram.org/bot${this.botToken}/sendMessage`;
-		if (threadId !== undefined) {
-			body.message_thread_id = threadId;
-		}
+		const baseBody =
+			threadId !== undefined ? { ...body, message_thread_id: threadId } : body;
 
 		// Try with Markdown first, fall back to plain text on parse error
-		const markdownBody = { ...body, parse_mode: "Markdown" };
+		const markdownBody = { ...baseBody, parse_mode: "Markdown" };
 		const response = await fetch(url, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
@@ -92,12 +91,15 @@ export class TelegramAdapter implements ChannelAdapter {
 
 		if (data.ok) return;
 
-		// If Markdown parsing failed (400), retry without parse_mode
-		if (data.error_code === 400) {
+		// If Markdown parsing failed, retry without parse_mode
+		const isParseError =
+			data.error_code === 400 &&
+			data.description?.toLowerCase().includes("can't parse");
+		if (isParseError) {
 			const plainResponse = await fetch(url, {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(body),
+				body: JSON.stringify(baseBody),
 			});
 			const plainData: {
 				ok: boolean;
