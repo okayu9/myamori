@@ -1,0 +1,1 @@
+No spec changes. This change implements existing requirements from `openspec/specs/infrastructure/spec.md` (OpenTofu Purpose, Managed Resources, State Management, Provider Version, Responsibility Matrix, CI/CD Pipelines, Directory Structure).

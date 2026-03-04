@@ -1,0 +1,103 @@
+# ============================================================================
+# D1 Databases
+# ============================================================================
+
+resource "cloudflare_d1_database" "production" {
+  account_id = var.cloudflare_account_id
+  name       = "myamori-db"
+}
+
+resource "cloudflare_d1_database" "staging" {
+  account_id = var.cloudflare_account_id
+  name       = "myamori-db-staging"
+}
+
+# ============================================================================
+# R2 Buckets
+# ============================================================================
+
+resource "cloudflare_r2_bucket" "production" {
+  account_id = var.cloudflare_account_id
+  name       = "myamori-files"
+}
+
+resource "cloudflare_r2_bucket" "staging" {
+  account_id = var.cloudflare_account_id
+  name       = "myamori-files-staging"
+}
+
+# ============================================================================
+# KV Namespaces
+# ============================================================================
+
+resource "cloudflare_workers_kv_namespace" "production" {
+  account_id = var.cloudflare_account_id
+  title      = "myamori-rate-limit"
+}
+
+resource "cloudflare_workers_kv_namespace" "staging" {
+  account_id = var.cloudflare_account_id
+  title      = "myamori-rate-limit-staging"
+}
+
+# ============================================================================
+# Queues
+# ============================================================================
+
+resource "cloudflare_queue" "production" {
+  account_id = var.cloudflare_account_id
+  queue_name = "myamori-scheduler"
+}
+
+resource "cloudflare_queue" "staging" {
+  account_id = var.cloudflare_account_id
+  queue_name = "myamori-scheduler-staging"
+}
+
+# ============================================================================
+# DNS Records (MX for Email Workers)
+# ============================================================================
+
+resource "cloudflare_dns_record" "mx_primary" {
+  zone_id  = var.zone_id
+  name     = var.domain
+  type     = "MX"
+  content  = "route1.mx.cloudflare.net"
+  priority = 69
+  ttl      = 1
+}
+
+resource "cloudflare_dns_record" "mx_secondary" {
+  zone_id  = var.zone_id
+  name     = var.domain
+  type     = "MX"
+  content  = "route2.mx.cloudflare.net"
+  priority = 12
+  ttl      = 1
+}
+
+resource "cloudflare_dns_record" "mx_tertiary" {
+  zone_id  = var.zone_id
+  name     = var.domain
+  type     = "MX"
+  content  = "route3.mx.cloudflare.net"
+  priority = 27
+  ttl      = 1
+}
+
+# ============================================================================
+# Email Routing
+# ============================================================================
+
+resource "cloudflare_email_routing_dns" "main" {
+  zone_id = var.zone_id
+  name    = var.domain
+}
+
+# ============================================================================
+# Vectorize
+# ============================================================================
+# Note: Cloudflare provider v5 does not have a cloudflare_vectorize_index
+# resource. Vectorize indexes must be created manually:
+#   bunx wrangler vectorize create myamori-memory --dimensions 768 --metric cosine
+#   bunx wrangler vectorize create myamori-memory-staging --dimensions 768 --metric cosine

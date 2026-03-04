@@ -1,0 +1,84 @@
+name: Infrastructure Plan
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "infra/**"
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    environment: production
+    concurrency:
+      group: infra-plan-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: opentofu/setup-opentofu@v1
+
+      - name: Initialize OpenTofu
+        working-directory: infra
+        run: tofu init -input=false
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_STATE_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_STATE_SECRET_ACCESS_KEY }}
+          AWS_ENDPOINT_URL_S3: https://${{ secrets.CLOUDFLARE_ACCOUNT_ID }}.r2.cloudflarestorage.com
+
+      - name: Run plan
+        id: plan
+        working-directory: infra
+        continue-on-error: true
+        run: tofu plan -input=false -no-color 2>&1 | tee plan_output.txt
+        env:
+          TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          TF_VAR_cloudflare_account_id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          TF_VAR_domain: ${{ vars.DOMAIN }}
+          TF_VAR_zone_id: ${{ vars.ZONE_ID }}
+          TF_VAR_email_forward_to: ${{ vars.EMAIL_FORWARD_TO }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_STATE_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_STATE_SECRET_ACCESS_KEY }}
+          AWS_ENDPOINT_URL_S3: https://${{ secrets.CLOUDFLARE_ACCOUNT_ID }}.r2.cloudflarestorage.com
+
+      - name: Prepare plan output
+        id: read_plan
+        working-directory: infra
+        run: |
+          # Truncate if over 60KB (GitHub comment limit is 65536 chars)
+          if [ "$(wc -c < plan_output.txt)" -gt 60000 ]; then
+            head -c 60000 plan_output.txt > plan_truncated.txt
+            echo -e "\n\n... (truncated, see workflow run for full output)" >> plan_truncated.txt
+            mv plan_truncated.txt plan_output.txt
+          fi
+          {
+            echo 'plan_text<<PLAN_EOF'
+            cat plan_output.txt
+            echo 'PLAN_EOF'
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Post plan to PR
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ### OpenTofu Plan (${{ steps.plan.outcome == 'success' && '✅' || '❌' }})
+
+            <details>
+            <summary>Click to expand plan output</summary>
+
+            ```hcl
+            ${{ steps.read_plan.outputs.plan_text }}
+            ```
+
+            </details>
+
+            [Full workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+      - name: Fail if plan failed
+        if: steps.plan.outcome == 'failure'
+        run: exit 1
