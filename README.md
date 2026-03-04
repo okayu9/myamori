@@ -17,7 +17,7 @@ Personal AI assistant running on [Cloudflare Workers](https://developers.cloudfl
 
 ## Architecture
 
-```
+```text
 Telegram ─── webhook ──▶ Cloudflare Worker ──▶ Workflow (durable execution)
                               │                       │
                               │                       ├── Claude LLM (Anthropic API)
