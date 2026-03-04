@@ -1,5 +1,5 @@
 variable "cloudflare_api_token" {
-  description = "Cloudflare API token with permissions for D1, R2, KV, Queues, DNS, and Email Routing"
+  description = "Cloudflare API token with permissions for D1, R2, KV, Queues (and DNS, Email Routing if domain is set)"
   type        = string
   sensitive   = true
 }
@@ -10,18 +10,20 @@ variable "cloudflare_account_id" {
 }
 
 variable "domain" {
-  description = "Domain name for DNS records and Email Routing (e.g., example.com)"
+  description = "Domain name for DNS records and Email Routing (e.g., example.com). Optional — only needed for email features."
   type        = string
+  default     = ""
 
   validation {
-    condition     = can(regex("^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)+$", var.domain))
-    error_message = "Must be a valid domain name (e.g., example.com)."
+    condition     = var.domain == "" || can(regex("^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)+$", var.domain))
+    error_message = "Must be a valid domain name (e.g., example.com) or empty string."
   }
 }
 
 variable "zone_id" {
-  description = "Cloudflare zone ID for the domain"
+  description = "Cloudflare zone ID for the domain. Required if domain is set."
   type        = string
+  default     = ""
 }
 
 variable "email_forward_to" {
