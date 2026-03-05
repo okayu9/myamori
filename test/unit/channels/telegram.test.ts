@@ -243,6 +243,12 @@ describe("markdownToTelegramHtml", () => {
 		expect(markdownToTelegramHtml("Hello world")).toBe("Hello world");
 	});
 
+	it("does not apply italic inside link URLs", () => {
+		expect(markdownToTelegramHtml("[x](https://e.com/*p*)")).toBe(
+			'<a href="https://e.com/*p*">x</a>',
+		);
+	});
+
 	it("does not apply bold/italic inside inline code", () => {
 		expect(markdownToTelegramHtml("`**not bold**`")).toBe(
 			"<code>**not bold**</code>",
@@ -264,6 +270,101 @@ describe("markdownToTelegramHtml", () => {
 		const input = "```\n**bold** *italic*\n```";
 		expect(markdownToTelegramHtml(input)).toBe(
 			"<pre><code>**bold** *italic*</code></pre>",
+		);
+	});
+
+	it("handles multiple bold segments in one line", () => {
+		expect(markdownToTelegramHtml("**a** then **b**")).toBe(
+			"<b>a</b> then <b>b</b>",
+		);
+	});
+
+	it("handles multiple italic segments in one line", () => {
+		expect(markdownToTelegramHtml("*a* then *b*")).toBe(
+			"<i>a</i> then <i>b</i>",
+		);
+	});
+
+	it("handles multiple inline code spans", () => {
+		expect(markdownToTelegramHtml("`a` and `b`")).toBe(
+			"<code>a</code> and <code>b</code>",
+		);
+	});
+
+	it("handles multiple links", () => {
+		const input = "[a](https://a.com) and [b](https://b.com)";
+		expect(markdownToTelegramHtml(input)).toBe(
+			'<a href="https://a.com">a</a> and <a href="https://b.com">b</a>',
+		);
+	});
+
+	it("does not convert unmatched single asterisk", () => {
+		expect(markdownToTelegramHtml("5 * 3 = 15")).toBe("5 * 3 = 15");
+	});
+
+	it("does not convert asterisks mid-word", () => {
+		expect(markdownToTelegramHtml("file*name*here")).toBe("file*name*here");
+	});
+
+	it("handles empty string", () => {
+		expect(markdownToTelegramHtml("")).toBe("");
+	});
+
+	it("handles code block without language tag", () => {
+		const input = "```\nplain code\n```";
+		expect(markdownToTelegramHtml(input)).toBe(
+			"<pre><code>plain code</code></pre>",
+		);
+	});
+
+	it("handles mixed formatting in complex message", () => {
+		const input =
+			"Hello **world**, check *this* `code` and [link](https://x.com)";
+		expect(markdownToTelegramHtml(input)).toBe(
+			'Hello <b>world</b>, check <i>this</i> <code>code</code> and <a href="https://x.com">link</a>',
+		);
+	});
+
+	it("handles code block with surrounding text", () => {
+		const input = "Before\n```\ncode\n```\nAfter";
+		expect(markdownToTelegramHtml(input)).toBe(
+			"Before\n<pre><code>code</code></pre>\nAfter",
+		);
+	});
+
+	it("handles HTML entities inside code blocks", () => {
+		const input = "```\na < b && c > d\n```";
+		expect(markdownToTelegramHtml(input)).toBe(
+			"<pre><code>a &lt; b &amp;&amp; c &gt; d</code></pre>",
+		);
+	});
+
+	it("handles HTML entities inside inline code", () => {
+		expect(markdownToTelegramHtml("`a < b`")).toBe("<code>a &lt; b</code>");
+	});
+
+	it("does not apply bold inside link text when tokenized", () => {
+		expect(markdownToTelegramHtml("[**bold**](https://x.com)")).toBe(
+			'<a href="https://x.com">**bold**</a>',
+		);
+	});
+
+	it("handles multiline bold text", () => {
+		expect(markdownToTelegramHtml("**line1\nline2**")).toBe(
+			"<b>line1\nline2</b>",
+		);
+	});
+
+	it("handles multiple code blocks in one message", () => {
+		const input = "```\nfirst\n```\ntext\n```\nsecond\n```";
+		expect(markdownToTelegramHtml(input)).toBe(
+			"<pre><code>first</code></pre>\ntext\n<pre><code>second</code></pre>",
+		);
+	});
+
+	it("preserves line breaks", () => {
+		expect(markdownToTelegramHtml("line1\nline2\nline3")).toBe(
+			"line1\nline2\nline3",
 		);
 	});
 });

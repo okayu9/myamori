@@ -159,44 +159,45 @@ export function markdownToTelegramHtml(text: string): string {
 		.replace(/</g, "&lt;")
 		.replace(/>/g, "&gt;");
 
-	// Protect code spans from bold/italic/link transformations by replacing
+	// Protect code/link spans from bold/italic transformations by replacing
 	// them with placeholder tokens, then restoring after formatting.
-	const codeTokens: string[] = [];
-	const placeholder = (i: number) => `\x00CODE${i}\x00`;
+	const tokens: string[] = [];
+	const placeholder = (i: number) => `\x00TOK${i}\x00`;
 
 	// Code blocks: ```lang\n...\n``` → placeholder
 	html = html.replace(/```(?:[^\n`]*)\s*\n([\s\S]*?)```/g, (_, code) => {
-		const idx = codeTokens.length;
-		codeTokens.push(`<pre><code>${code.trimEnd()}</code></pre>`);
+		const idx = tokens.length;
+		tokens.push(`<pre><code>${code.trimEnd()}</code></pre>`);
 		return placeholder(idx);
 	});
 
 	// Inline code: `...` → placeholder
 	html = html.replace(/`([^`]+)`/g, (_, code) => {
-		const idx = codeTokens.length;
-		codeTokens.push(`<code>${code}</code>`);
+		const idx = tokens.length;
+		tokens.push(`<code>${code}</code>`);
 		return placeholder(idx);
 	});
 
-	// Bold: **...** → <b>...</b>
-	html = html.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
+	// Links: [text](url) → placeholder (protect URLs from italic/bold)
+	html = html.replace(
+		/\[([^\]]+)\]\(([^()]*(?:\([^()]*\)[^()]*)*)\)/g,
+		(_, linkText, url) => {
+			const idx = tokens.length;
+			const safeUrl = url.replace(/"/g, "&quot;");
+			tokens.push(`<a href="${safeUrl}">${linkText}</a>`);
+			return placeholder(idx);
+		},
+	);
+
+	// Bold: **...** → <b>...</b> (dotAll so it spans newlines)
+	html = html.replace(/\*\*([\s\S]+?)\*\*/g, "<b>$1</b>");
 
 	// Italic: *...* → <i>...</i>  (single asterisk, after bold replacement)
 	html = html.replace(/(?<!\w)\*([^*]+)\*(?!\w)/g, "<i>$1</i>");
 
-	// Links: [text](url) → <a href="url">text</a>
-	// URL pattern allows balanced parentheses (e.g. Wikipedia URLs)
-	html = html.replace(
-		/\[([^\]]+)\]\(([^()]*(?:\([^()]*\)[^()]*)*)\)/g,
-		(_, linkText, url) => {
-			const safeUrl = url.replace(/"/g, "&quot;");
-			return `<a href="${safeUrl}">${linkText}</a>`;
-		},
-	);
-
-	// Restore code tokens
-	for (let i = 0; i < codeTokens.length; i++) {
-		html = html.replace(placeholder(i), codeTokens[i] as string);
+	// Restore tokens
+	for (let i = 0; i < tokens.length; i++) {
+		html = html.replace(placeholder(i), tokens[i] as string);
 	}
 
 	return html;
