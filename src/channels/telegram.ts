@@ -173,11 +173,11 @@ export function markdownToTelegramHtml(text: string): string {
 
 	// Markdown tables → <pre> placeholder (Telegram has no <table> support)
 	html = html.replace(
-		/((?:^|\n)\|.+\|(?:\n\|[-: |]+\|)(?:\n\|.+\|)+)/g,
-		(table) => {
+		/(^|\n)(\|.+\|(?:\n\|[-: |]+\|)(?:\n\|.+\|)+)/g,
+		(_, prefix, table) => {
 			const idx = tokens.length;
-			tokens.push(`<pre>${table.replace(/^\n/, "")}</pre>`);
-			return placeholder(idx);
+			tokens.push(`<pre>${table}</pre>`);
+			return `${prefix}${placeholder(idx)}`;
 		},
 	);
 

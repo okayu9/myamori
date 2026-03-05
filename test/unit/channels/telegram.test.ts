@@ -379,7 +379,7 @@ describe("markdownToTelegramHtml", () => {
 		const input =
 			"Results:\n| A | B |\n| --- | --- |\n| 1 | 2 |\n| 3 | 4 |\nDone.";
 		expect(markdownToTelegramHtml(input)).toBe(
-			"Results:<pre>| A | B |\n| --- | --- |\n| 1 | 2 |\n| 3 | 4 |</pre>\nDone.",
+			"Results:\n<pre>| A | B |\n| --- | --- |\n| 1 | 2 |\n| 3 | 4 |</pre>\nDone.",
 		);
 	});
 
