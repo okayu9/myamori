@@ -158,14 +158,24 @@ export function markdownToTelegramHtml(text: string): string {
 		.replace(/</g, "&lt;")
 		.replace(/>/g, "&gt;");
 
-	// Code blocks: ```lang\n...\n``` → <pre><code>...</code></pre>
-	html = html.replace(
-		/```(?:\w*)\s*\n([\s\S]*?)```/g,
-		(_, code) => `<pre><code>${code.trimEnd()}</code></pre>`,
-	);
+	// Protect code spans from bold/italic/link transformations by replacing
+	// them with placeholder tokens, then restoring after formatting.
+	const codeTokens: string[] = [];
+	const placeholder = (i: number) => `\x00CODE${i}\x00`;
 
-	// Inline code: `...` → <code>...</code>
-	html = html.replace(/`([^`]+)`/g, "<code>$1</code>");
+	// Code blocks: ```lang\n...\n``` → placeholder
+	html = html.replace(/```(?:\w*)\s*\n([\s\S]*?)```/g, (_, code) => {
+		const idx = codeTokens.length;
+		codeTokens.push(`<pre><code>${code.trimEnd()}</code></pre>`);
+		return placeholder(idx);
+	});
+
+	// Inline code: `...` → placeholder
+	html = html.replace(/`([^`]+)`/g, (_, code) => {
+		const idx = codeTokens.length;
+		codeTokens.push(`<code>${code}</code>`);
+		return placeholder(idx);
+	});
 
 	// Bold: **...** → <b>...</b>
 	html = html.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
@@ -178,6 +188,11 @@ export function markdownToTelegramHtml(text: string): string {
 		const safeUrl = url.replace(/"/g, "&quot;");
 		return `<a href="${safeUrl}">${linkText}</a>`;
 	});
+
+	// Restore code tokens
+	for (let i = 0; i < codeTokens.length; i++) {
+		html = html.replace(placeholder(i), codeTokens[i] as string);
+	}
 
 	return html;
 }

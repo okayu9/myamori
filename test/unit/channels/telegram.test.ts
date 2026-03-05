@@ -242,4 +242,17 @@ describe("markdownToTelegramHtml", () => {
 	it("passes plain text through unchanged", () => {
 		expect(markdownToTelegramHtml("Hello world")).toBe("Hello world");
 	});
+
+	it("does not apply bold/italic inside inline code", () => {
+		expect(markdownToTelegramHtml("`**not bold**`")).toBe(
+			"<code>**not bold**</code>",
+		);
+	});
+
+	it("does not apply formatting inside code blocks", () => {
+		const input = "```\n**bold** *italic*\n```";
+		expect(markdownToTelegramHtml(input)).toBe(
+			"<pre><code>**bold** *italic*</code></pre>",
+		);
+	});
 });
