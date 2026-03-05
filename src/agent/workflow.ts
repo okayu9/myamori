@@ -181,27 +181,8 @@ export class AgentWorkflow extends WorkflowEntrypoint<
 		}
 
 		await step.do("send-reply", { timeout: "30 seconds" }, async () => {
-			const url = `https://api.telegram.org/bot${this.env.TELEGRAM_BOT_TOKEN}/sendMessage`;
-			const body: Record<string, unknown> = {
-				chat_id: chatId,
-				text: replyText,
-			};
-			if (threadId !== undefined) {
-				body.message_thread_id = threadId;
-			}
-			const response = await fetch(url, {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(body),
-				signal: AbortSignal.timeout(10_000),
-			});
-			const data: { ok: boolean; error_code?: number; description?: string } =
-				await response.json();
-			if (!data.ok) {
-				throw new Error(
-					`Telegram sendMessage failed (${data.error_code}): ${data.description}`,
-				);
-			}
+			const telegram = new TelegramAdapter(this.env.TELEGRAM_BOT_TOKEN, "");
+			await telegram.sendReply(chatId, replyText, threadId);
 		});
 
 		await step.do("save-history", async () => {
