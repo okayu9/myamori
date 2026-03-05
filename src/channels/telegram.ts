@@ -171,6 +171,16 @@ export function markdownToTelegramHtml(text: string): string {
 		return placeholder(idx);
 	});
 
+	// Markdown tables → <pre> placeholder (Telegram has no <table> support)
+	html = html.replace(
+		/(^|\n)(\|.+\|(?:\n\|[-: |]+\|)(?:\n\|.+\|)+)/g,
+		(_, prefix, table) => {
+			const idx = tokens.length;
+			tokens.push(`<pre>${table}</pre>`);
+			return `${prefix}${placeholder(idx)}`;
+		},
+	);
+
 	// Inline code: `...` → placeholder
 	html = html.replace(/`([^`]+)`/g, (_, code) => {
 		const idx = tokens.length;

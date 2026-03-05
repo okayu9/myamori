@@ -367,4 +367,26 @@ describe("markdownToTelegramHtml", () => {
 			"line1\nline2\nline3",
 		);
 	});
+
+	it("converts markdown table to <pre> block", () => {
+		const input = "| Name | Age |\n| --- | --- |\n| Alice | 30 |";
+		expect(markdownToTelegramHtml(input)).toBe(
+			"<pre>| Name | Age |\n| --- | --- |\n| Alice | 30 |</pre>",
+		);
+	});
+
+	it("converts table with surrounding text", () => {
+		const input =
+			"Results:\n| A | B |\n| --- | --- |\n| 1 | 2 |\n| 3 | 4 |\nDone.";
+		expect(markdownToTelegramHtml(input)).toBe(
+			"Results:\n<pre>| A | B |\n| --- | --- |\n| 1 | 2 |\n| 3 | 4 |</pre>\nDone.",
+		);
+	});
+
+	it("escapes HTML entities inside tables", () => {
+		const input = "| A | B |\n| --- | --- |\n| a < b | c & d |";
+		expect(markdownToTelegramHtml(input)).toBe(
+			"<pre>| A | B |\n| --- | --- |\n| a &lt; b | c &amp; d |</pre>",
+		);
+	});
 });
