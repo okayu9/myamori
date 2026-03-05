@@ -249,6 +249,17 @@ describe("markdownToTelegramHtml", () => {
 		);
 	});
 
+	it("handles code fences with non-word language tags", () => {
+		const input = "```c++\n**x**\n```";
+		expect(markdownToTelegramHtml(input)).toBe("<pre><code>**x**</code></pre>");
+	});
+
+	it("keeps URLs containing parentheses intact", () => {
+		expect(markdownToTelegramHtml("[x](https://example.com/a_(b))")).toBe(
+			'<a href="https://example.com/a_(b)">x</a>',
+		);
+	});
+
 	it("does not apply formatting inside code blocks", () => {
 		const input = "```\n**bold** *italic*\n```";
 		expect(markdownToTelegramHtml(input)).toBe(
