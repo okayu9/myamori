@@ -203,5 +203,39 @@ describe("approval handler", () => {
 			expect(results).toHaveLength(1);
 			expect(results[0]?.toolName).toBe("tool_a");
 		});
+
+		it("excludes approvals older than 30 minutes", async () => {
+			const db = getDb();
+			const id = await createApproval(db, {
+				chatId: "chat-cutoff",
+				toolName: "old_tool",
+				toolInput: {},
+			});
+
+			const { pendingApprovals } = await import("../../../src/db/schema");
+			const { eq } = await import("drizzle-orm");
+			const oldDate = new Date(Date.now() - 31 * 60_000).toISOString();
+			await db
+				.update(pendingApprovals)
+				.set({ createdAt: oldDate })
+				.where(eq(pendingApprovals.id, id));
+
+			const results = await getRecentApprovals(db, "chat-cutoff");
+			expect(results).toHaveLength(0);
+		});
+
+		it("limits results to 5", async () => {
+			const db = getDb();
+			for (let i = 0; i < 6; i++) {
+				await createApproval(db, {
+					chatId: "chat-cap",
+					toolName: `tool_${i}`,
+					toolInput: {},
+				});
+			}
+
+			const results = await getRecentApprovals(db, "chat-cap");
+			expect(results).toHaveLength(5);
+		});
 	});
 });

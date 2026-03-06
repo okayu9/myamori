@@ -159,5 +159,6 @@ describe("buildSystemPrompt", () => {
 		expect(prompt).toContain("APPROVED: a");
 		expect(prompt).toContain("REJECTED: b");
 		expect(prompt).toContain("EXPIRED: c");
+		expect(prompt).toContain("historical context only");
 	});
 });

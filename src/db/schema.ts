@@ -96,6 +96,9 @@ export const pendingApprovals = sqliteTable(
 		expiresAt: text("expires_at").notNull(),
 	},
 	(table) => [
-		index("idx_pending_approvals_chat").on(table.chatId, table.status),
+		index("idx_pending_approvals_chat_created").on(
+			table.chatId,
+			table.createdAt,
+		),
 	],
 );
