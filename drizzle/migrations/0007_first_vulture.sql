@@ -1,0 +1,1 @@
+CREATE INDEX `idx_pending_approvals_chat` ON `pending_approvals` (`chat_id`,`status`);

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
 	createApproval,
 	getApproval,
+	getRecentApprovals,
 	resolveApproval,
 } from "../../../src/approval/handler";
 import { createDb } from "../../../src/db";
@@ -141,6 +142,66 @@ describe("approval handler", () => {
 
 			const approval = await getApproval(db, id);
 			expect(approval?.status).toBe("expired");
+		});
+	});
+
+	describe("getRecentApprovals", () => {
+		it("returns recent approvals for a chatId", async () => {
+			const db = getDb();
+			await createApproval(db, {
+				chatId: "chat-ctx",
+				toolName: "create_event",
+				toolInput: { title: "Meeting" },
+			});
+
+			const results = await getRecentApprovals(db, "chat-ctx");
+			expect(results).toHaveLength(1);
+			expect(results[0]?.toolName).toBe("create_event");
+			expect(results[0]?.status).toBe("pending");
+		});
+
+		it("returns empty array for unknown chatId", async () => {
+			const db = getDb();
+			const results = await getRecentApprovals(db, "no-such-chat");
+			expect(results).toEqual([]);
+		});
+
+		it("marks expired pending approvals as expired", async () => {
+			const db = getDb();
+			const id = await createApproval(db, {
+				chatId: "chat-exp",
+				toolName: "delete_file",
+				toolInput: {},
+			});
+
+			const { pendingApprovals } = await import("../../../src/db/schema");
+			const { eq } = await import("drizzle-orm");
+			await db
+				.update(pendingApprovals)
+				.set({ expiresAt: new Date(0).toISOString() })
+				.where(eq(pendingApprovals.id, id));
+
+			const results = await getRecentApprovals(db, "chat-exp");
+			expect(results).toHaveLength(1);
+			expect(results[0]?.status).toBe("expired");
+		});
+
+		it("isolates results by chatId", async () => {
+			const db = getDb();
+			await createApproval(db, {
+				chatId: "chat-iso-a",
+				toolName: "tool_a",
+				toolInput: {},
+			});
+			await createApproval(db, {
+				chatId: "chat-iso-b",
+				toolName: "tool_b",
+				toolInput: {},
+			});
+
+			const results = await getRecentApprovals(db, "chat-iso-a");
+			expect(results).toHaveLength(1);
+			expect(results[0]?.toolName).toBe("tool_a");
 		});
 	});
 });

@@ -126,4 +126,38 @@ describe("buildSystemPrompt", () => {
 		const prompt = buildSystemPrompt();
 		expect(prompt).toContain("Cron expressions are always in UTC");
 	});
+
+	it("includes approval status section when approvals provided", () => {
+		const prompt = buildSystemPrompt(undefined, undefined, undefined, [
+			{
+				toolName: "create_event",
+				toolInput: '{"title":"Meeting"}',
+				status: "pending",
+				createdAt: "2026-01-01T00:00:00.000Z",
+			},
+		]);
+		expect(prompt).toContain("Recent Approval Status");
+		expect(prompt).toContain("PENDING: create_event");
+	});
+
+	it("omits approval section when no approvals", () => {
+		const prompt = buildSystemPrompt();
+		expect(prompt).not.toContain("Recent Approval Status");
+	});
+
+	it("omits approval section for empty array", () => {
+		const prompt = buildSystemPrompt(undefined, undefined, undefined, []);
+		expect(prompt).not.toContain("Recent Approval Status");
+	});
+
+	it("shows correct labels for each approval status", () => {
+		const prompt = buildSystemPrompt(undefined, undefined, undefined, [
+			{ toolName: "a", toolInput: "{}", status: "approved", createdAt: "" },
+			{ toolName: "b", toolInput: "{}", status: "rejected", createdAt: "" },
+			{ toolName: "c", toolInput: "{}", status: "expired", createdAt: "" },
+		]);
+		expect(prompt).toContain("APPROVED: a");
+		expect(prompt).toContain("REJECTED: b");
+		expect(prompt).toContain("EXPIRED: c");
+	});
 });
