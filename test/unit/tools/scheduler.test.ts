@@ -51,6 +51,34 @@ describe("scheduler tools", () => {
 			expect(job?.name).toBe("Morning briefing");
 			expect(job?.enabled).toBe(true);
 		});
+
+		it("includes runOnce in output", async () => {
+			const db = getDb();
+			const id = crypto.randomUUID();
+			const now = new Date().toISOString();
+			await db.insert(scheduledJobs).values({
+				id,
+				name: "One-time",
+				cronExpr: "0 9 * * *",
+				prompt: "Once",
+				chatId: "chat-ro",
+				runOnce: 1,
+				enabled: 1,
+				nextRunAt: new Date(Date.now() + 3600000).toISOString(),
+				createdAt: now,
+				updatedAt: now,
+			});
+
+			const tools = createSchedulerTools(db, "chat-ro");
+			const tool = tools.find((t) => t.name === "list_scheduled_jobs");
+
+			const result = (await tool?.execute({})) as {
+				jobs: Array<{ id: string; runOnce: boolean }>;
+			};
+
+			const job = result.jobs.find((j) => j.id === id);
+			expect(job?.runOnce).toBe(true);
+		});
 	});
 
 	describe("create_scheduled_job", () => {
@@ -100,6 +128,45 @@ describe("scheduler tools", () => {
 					prompt: "Hello",
 				}),
 			).rejects.toThrow();
+		});
+
+		it("creates a one-time job with runOnce", async () => {
+			const db = getDb();
+			const tools = createSchedulerTools(db, "chat-1");
+			const tool = tools.find((t) => t.name === "create_scheduled_job");
+
+			const result = (await tool?.execute({
+				name: "One-time job",
+				cronExpr: "0 9 * * *",
+				prompt: "Run once",
+				runOnce: true,
+			})) as { id: string; created: boolean };
+
+			expect(result.created).toBe(true);
+
+			const [row] = await db
+				.select()
+				.from(scheduledJobs)
+				.where(eq(scheduledJobs.id, result.id));
+			expect(row?.runOnce).toBe(1);
+		});
+
+		it("defaults runOnce to 0", async () => {
+			const db = getDb();
+			const tools = createSchedulerTools(db, "chat-1");
+			const tool = tools.find((t) => t.name === "create_scheduled_job");
+
+			const result = (await tool?.execute({
+				name: "Recurring job",
+				cronExpr: "0 9 * * *",
+				prompt: "Recurring",
+			})) as { id: string };
+
+			const [row] = await db
+				.select()
+				.from(scheduledJobs)
+				.where(eq(scheduledJobs.id, result.id));
+			expect(row?.runOnce).toBe(0);
 		});
 
 		it("computes nextRunAt correctly", async () => {

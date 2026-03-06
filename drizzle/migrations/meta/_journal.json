@@ -57,6 +57,13 @@
       "when": 1772773852161,
       "tag": "0008_famous_amphibian",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1772825532185,
+      "tag": "0009_pink_ravenous",
+      "breakpoints": true
     }
   ]
 }

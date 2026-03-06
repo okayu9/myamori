@@ -28,6 +28,7 @@ export function createSchedulerTools(
 					name: job.name,
 					cronExpr: job.cronExpr,
 					prompt: job.prompt,
+					runOnce: job.runOnce === 1,
 					enabled: job.enabled === 1,
 					nextRunAt: job.nextRunAt,
 					createdAt: job.createdAt,
@@ -40,7 +41,7 @@ export function createSchedulerTools(
 	const createScheduledJob = defineTool({
 		name: "create_scheduled_job",
 		description:
-			"Create a new scheduled job. Cron expressions are always in UTC — convert local time to UTC before setting. Uses a 5-field cron expression (minute hour day-of-month month day-of-week). Supports numbers, *, commas (,), ranges (-), and steps (/). Examples: '0 0 * * *' (daily 9am JST = 0am UTC), '*/30 * * * *' (every 30 min), '0 0 * * 1-5' (weekdays 9am JST = 0am UTC). Requires approval.",
+			"Create a new scheduled job. Cron expressions are always in UTC — convert local time to UTC before setting. Uses a 5-field cron expression (minute hour day-of-month month day-of-week). Supports numbers, *, commas (,), ranges (-), and steps (/). Examples: '0 0 * * *' (daily 9am JST = 0am UTC), '*/30 * * * *' (every 30 min), '0 0 * * 1-5' (weekdays 9am JST = 0am UTC). Set runOnce to true for one-time jobs that auto-disable after running. Requires approval.",
 		inputSchema: z.object({
 			name: z.string().describe("Human-readable name for the job"),
 			cronExpr: z
@@ -49,6 +50,11 @@ export function createSchedulerTools(
 			prompt: z
 				.string()
 				.describe("Message to send to the assistant when the job runs"),
+			runOnce: z
+				.boolean()
+				.optional()
+				.default(false)
+				.describe("If true, the job runs once then auto-disables"),
 		}),
 		riskLevel: "high",
 		execute: async (input) => {
@@ -67,6 +73,7 @@ export function createSchedulerTools(
 				prompt: input.prompt,
 				chatId,
 				threadId,
+				runOnce: input.runOnce ? 1 : 0,
 				enabled: 1,
 				nextRunAt: nextRunAt.toISOString(),
 				createdAt: nowIso,

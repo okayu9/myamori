@@ -46,6 +46,12 @@ export async function handleScheduledEvent(env: SchedulerEnv): Promise<void> {
 
 	await Promise.all(
 		dueJobs.map((job) => {
+			if (job.runOnce) {
+				return db
+					.update(scheduledJobs)
+					.set({ enabled: 0, updatedAt: new Date().toISOString() })
+					.where(eq(scheduledJobs.id, job.id));
+			}
 			const nextRunAt = getNextRun(job.cronExpr, new Date()).toISOString();
 			return db
 				.update(scheduledJobs)
