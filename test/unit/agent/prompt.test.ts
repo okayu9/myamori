@@ -161,4 +161,26 @@ describe("buildSystemPrompt", () => {
 		expect(prompt).toContain("EXPIRED: c");
 		expect(prompt).toContain("historical context only");
 	});
+
+	it("sanitizes newlines and truncates long toolInput", () => {
+		const longInput = "x".repeat(250);
+		const prompt = buildSystemPrompt(undefined, undefined, undefined, [
+			{
+				toolName: "t",
+				toolInput: `{"a":"line1\nline2"}`,
+				status: "pending",
+				createdAt: "",
+			},
+			{
+				toolName: "u",
+				toolInput: longInput,
+				status: "pending",
+				createdAt: "",
+			},
+		]);
+		expect(prompt).not.toContain("line1\nline2");
+		expect(prompt).toContain("line1\\nline2");
+		expect(prompt).toContain(`${"x".repeat(200)}...`);
+		expect(prompt).not.toContain("x".repeat(201));
+	});
 });
