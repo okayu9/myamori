@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq, gte } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import type { createDb } from "../db";
 import { pendingApprovals } from "../db/schema";
@@ -98,4 +98,49 @@ export async function resolveApproval(
 		.returning({ id: pendingApprovals.id });
 
 	return result.length > 0 ? "resolved" : "already_resolved";
+}
+
+export interface ApprovalContext {
+	toolName: string;
+	toolInput: string;
+	status: "pending" | "approved" | "rejected" | "expired";
+	createdAt: string;
+}
+
+const RECENT_MINUTES = 30;
+
+export async function getRecentApprovals(
+	db: Db,
+	chatId: string,
+): Promise<ApprovalContext[]> {
+	const cutoff = new Date(Date.now() - RECENT_MINUTES * 60_000).toISOString();
+
+	const rows = await db
+		.select({
+			toolName: pendingApprovals.toolName,
+			toolInput: pendingApprovals.toolInput,
+			status: pendingApprovals.status,
+			createdAt: pendingApprovals.createdAt,
+			expiresAt: pendingApprovals.expiresAt,
+		})
+		.from(pendingApprovals)
+		.where(
+			and(
+				eq(pendingApprovals.chatId, chatId),
+				gte(pendingApprovals.createdAt, cutoff),
+			),
+		)
+		.orderBy(desc(pendingApprovals.createdAt))
+		.limit(5);
+
+	const now = new Date();
+	return rows.map((row) => ({
+		toolName: row.toolName,
+		toolInput: row.toolInput,
+		status:
+			row.status === "pending" && new Date(row.expiresAt) < now
+				? "expired"
+				: (row.status as ApprovalContext["status"]),
+		createdAt: row.createdAt,
+	}));
 }

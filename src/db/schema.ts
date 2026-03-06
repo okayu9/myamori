@@ -79,17 +79,26 @@ export const memories = sqliteTable(
 	(table) => [index("idx_memories_chat_id").on(table.chatId)],
 );
 
-export const pendingApprovals = sqliteTable("pending_approvals", {
-	id: text("id").primaryKey(),
-	chatId: text("chat_id").notNull(),
-	threadId: integer("thread_id"),
-	toolName: text("tool_name").notNull(),
-	toolInput: text("tool_input").notNull(),
-	status: text("status", {
-		enum: ["pending", "approved", "rejected", "expired"],
-	})
-		.notNull()
-		.default("pending"),
-	createdAt: text("created_at").notNull(),
-	expiresAt: text("expires_at").notNull(),
-});
+export const pendingApprovals = sqliteTable(
+	"pending_approvals",
+	{
+		id: text("id").primaryKey(),
+		chatId: text("chat_id").notNull(),
+		threadId: integer("thread_id"),
+		toolName: text("tool_name").notNull(),
+		toolInput: text("tool_input").notNull(),
+		status: text("status", {
+			enum: ["pending", "approved", "rejected", "expired"],
+		})
+			.notNull()
+			.default("pending"),
+		createdAt: text("created_at").notNull(),
+		expiresAt: text("expires_at").notNull(),
+	},
+	(table) => [
+		index("idx_pending_approvals_chat_created").on(
+			table.chatId,
+			table.createdAt,
+		),
+	],
+);

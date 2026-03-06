@@ -5,7 +5,11 @@ import {
 } from "cloudflare:workers";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { generateText, stepCountIs } from "ai";
-import { createApproval } from "../approval/handler";
+import {
+	type ApprovalContext,
+	createApproval,
+	getRecentApprovals,
+} from "../approval/handler";
 import { logLLMCall, logToolExecution } from "../audit/logger";
 import { TelegramAdapter } from "../channels/telegram";
 import { createDb } from "../db";
@@ -58,6 +62,16 @@ export class AgentWorkflow extends WorkflowEntrypoint<
 			return await loadHistory(db, chatId);
 		});
 
+		let approvals: ApprovalContext[] = [];
+		try {
+			approvals = await step.do("load-approvals", async () => {
+				const db = createDb(this.env.DB);
+				return await getRecentApprovals(db, chatId);
+			});
+		} catch (error) {
+			console.error("Approval context loading failed:", error);
+		}
+
 		let memories: { summary: string; score: number }[] = [];
 		if (this.env.VECTORIZE && this.env.AI) {
 			try {
@@ -101,6 +115,7 @@ export class AgentWorkflow extends WorkflowEntrypoint<
 							registry.getAll(),
 							memories.length > 0 ? memories : undefined,
 							this.env.TIMEZONE,
+							approvals.length > 0 ? approvals : undefined,
 						),
 						messages: [
 							...history.map((m) => ({

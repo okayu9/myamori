@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { saveMessages } from "./agent/history";
 import type { AgentWorkflowParams } from "./agent/workflow";
 import { getApproval, resolveApproval } from "./approval/handler";
 import { logToolExecution } from "./audit/logger";
@@ -200,6 +201,12 @@ async function handleCallbackQuery(
 			`❌ Rejected: ${approval.toolName}`,
 			approval.threadId ?? undefined,
 		);
+		await saveMessages(
+			db,
+			approval.chatId,
+			`[System: User rejected ${approval.toolName}]`,
+			`The ${approval.toolName} action was rejected.`,
+		);
 		return;
 	}
 
@@ -242,10 +249,17 @@ async function handleCallbackQuery(
 			input: parsedInput.data,
 			durationMs: Date.now() - toolStart,
 		});
+		const resultStr = JSON.stringify(toolResult, null, 2);
 		await adapter.sendReply(
 			approval.chatId,
-			`✅ ${approval.toolName} executed:\n\n${JSON.stringify(toolResult, null, 2)}`,
+			`✅ ${approval.toolName} executed:\n\n${resultStr}`,
 			approval.threadId ?? undefined,
+		);
+		await saveMessages(
+			db,
+			approval.chatId,
+			`[System: User approved ${approval.toolName}]`,
+			`${approval.toolName} executed successfully. Result: ${resultStr}`,
 		);
 	} catch (error) {
 		const message = error instanceof Error ? error.message : "Unknown error";
@@ -260,6 +274,12 @@ async function handleCallbackQuery(
 			approval.chatId,
 			`❌ ${approval.toolName} failed: ${message}`,
 			approval.threadId ?? undefined,
+		);
+		await saveMessages(
+			db,
+			approval.chatId,
+			`[System: User approved ${approval.toolName}]`,
+			`${approval.toolName} was approved but execution failed: ${message}`,
 		);
 	}
 }
