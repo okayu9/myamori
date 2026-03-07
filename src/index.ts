@@ -9,7 +9,7 @@ import { createDb } from "./db";
 import { ingestEmail } from "./email/ingestion";
 import { checkRateLimit } from "./rate-limit/checker";
 import type { SchedulerJobMessage } from "./scheduler/handler";
-import { disableRunOnceJob, handleScheduledEvent } from "./scheduler/handler";
+import { handleScheduledEvent } from "./scheduler/handler";
 import { buildToolRegistry } from "./tools/build-registry";
 
 type Bindings = {
@@ -302,7 +302,7 @@ export default {
 		_ctx: ExecutionContext,
 	) {
 		for (const msg of batch.messages) {
-			const { chatId, prompt, threadId, jobId } = msg.body;
+			const { chatId, prompt, threadId } = msg.body;
 			try {
 				await env.AGENT_WORKFLOW.create({
 					params: {
@@ -311,15 +311,6 @@ export default {
 						threadId,
 					},
 				});
-				const db = createDb(env.DB);
-				try {
-					await disableRunOnceJob(db, jobId);
-				} catch (disableError) {
-					console.error(
-						`Failed to disable runOnce job ${jobId}, may re-execute:`,
-						disableError,
-					);
-				}
 				msg.ack();
 			} catch (error) {
 				console.error(
