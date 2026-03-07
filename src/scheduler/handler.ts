@@ -42,15 +42,30 @@ export async function handleScheduledEvent(env: SchedulerEnv): Promise<void> {
 		}),
 	);
 
+	// Disable runOnce jobs before enqueueing to prevent re-enqueue on next tick
+	const runOnceJobs = dueJobs.filter((job) => job.runOnce);
+	if (runOnceJobs.length > 0) {
+		await Promise.all(
+			runOnceJobs.map((job) =>
+				db
+					.update(scheduledJobs)
+					.set({ enabled: 0, updatedAt: new Date().toISOString() })
+					.where(eq(scheduledJobs.id, job.id)),
+			),
+		);
+	}
+
 	await env.SCHEDULER_QUEUE.sendBatch(messages);
 
 	await Promise.all(
-		dueJobs.map((job) => {
-			const nextRunAt = getNextRun(job.cronExpr, new Date()).toISOString();
-			return db
-				.update(scheduledJobs)
-				.set({ nextRunAt, updatedAt: new Date().toISOString() })
-				.where(eq(scheduledJobs.id, job.id));
-		}),
+		dueJobs
+			.filter((job) => !job.runOnce)
+			.map((job) => {
+				const nextRunAt = getNextRun(job.cronExpr, new Date()).toISOString();
+				return db
+					.update(scheduledJobs)
+					.set({ nextRunAt, updatedAt: new Date().toISOString() })
+					.where(eq(scheduledJobs.id, job.id));
+			}),
 	);
 }

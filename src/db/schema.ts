@@ -43,6 +43,7 @@ export const scheduledJobs = sqliteTable(
 		prompt: text("prompt").notNull(),
 		chatId: text("chat_id").notNull(),
 		threadId: integer("thread_id"),
+		runOnce: integer("run_once").notNull().default(0),
 		enabled: integer("enabled").notNull().default(1),
 		nextRunAt: text("next_run_at").notNull(),
 		createdAt: text("created_at").notNull(),

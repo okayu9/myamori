@@ -108,6 +108,66 @@ describe("handleScheduledEvent", () => {
 		expect(sendBatchCalled).toBe(false);
 	});
 
+	it("disables runOnce job before enqueueing", async () => {
+		const db = getDb();
+		const jobId = await insertJob(db, { runOnce: 1 });
+		const [before] = await db
+			.select()
+			.from(scheduledJobs)
+			.where(eq(scheduledJobs.id, jobId));
+
+		const sentMessages: unknown[] = [];
+		const mockQueue = {
+			sendBatch: async (msgs: unknown[]) => {
+				sentMessages.push(...msgs);
+			},
+		} as unknown as Queue;
+
+		await handleScheduledEvent({
+			DB: env.DB,
+			SCHEDULER_QUEUE: mockQueue,
+		});
+
+		// Should be enqueued
+		expect(sentMessages.length).toBe(1);
+
+		// Should be disabled after handling
+		const [after] = await db
+			.select()
+			.from(scheduledJobs)
+			.where(eq(scheduledJobs.id, jobId));
+		expect(after?.enabled).toBe(0);
+		// nextRunAt should be unchanged (not recalculated)
+		expect(after?.nextRunAt).toBe(before?.nextRunAt);
+	});
+
+	it("recalculates nextRunAt for recurring jobs (not runOnce)", async () => {
+		const db = getDb();
+		const jobId = await insertJob(db, { runOnce: 0 });
+
+		const mockQueue = {
+			sendBatch: async () => {},
+		} as unknown as Queue;
+
+		await handleScheduledEvent({
+			DB: env.DB,
+			SCHEDULER_QUEUE: mockQueue,
+		});
+
+		const [updated] = await db
+			.select()
+			.from(scheduledJobs)
+			.where(eq(scheduledJobs.id, jobId));
+
+		expect(updated).toBeDefined();
+		// biome-ignore lint/style/noNonNullAssertion: asserted above
+		expect(updated!.enabled).toBe(1);
+		// biome-ignore lint/style/noNonNullAssertion: asserted above
+		expect(new Date(updated!.nextRunAt).getTime()).toBeGreaterThan(
+			Date.now() - 1000,
+		);
+	});
+
 	it("skips disabled jobs", async () => {
 		const db = getDb();
 		await insertJob(db, { enabled: 0 });

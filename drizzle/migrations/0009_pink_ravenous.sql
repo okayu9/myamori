@@ -1,0 +1,1 @@
+ALTER TABLE `scheduled_jobs` ADD `run_once` integer DEFAULT 0 NOT NULL;
