@@ -3,7 +3,10 @@ import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
 import { createDb } from "../../../src/db";
 import { scheduledJobs } from "../../../src/db/schema";
-import { handleScheduledEvent } from "../../../src/scheduler/handler";
+import {
+	disableRunOnceJob,
+	handleScheduledEvent,
+} from "../../../src/scheduler/handler";
 
 function getDb() {
 	return createDb(env.DB);
@@ -108,12 +111,19 @@ describe("handleScheduledEvent", () => {
 		expect(sendBatchCalled).toBe(false);
 	});
 
-	it("disables runOnce job after execution", async () => {
+	it("enqueues runOnce job without recalculating nextRunAt", async () => {
 		const db = getDb();
 		const jobId = await insertJob(db, { runOnce: 1 });
+		const [before] = await db
+			.select()
+			.from(scheduledJobs)
+			.where(eq(scheduledJobs.id, jobId));
 
+		const sentMessages: unknown[] = [];
 		const mockQueue = {
-			sendBatch: async () => {},
+			sendBatch: async (msgs: unknown[]) => {
+				sentMessages.push(...msgs);
+			},
 		} as unknown as Queue;
 
 		await handleScheduledEvent({
@@ -121,14 +131,17 @@ describe("handleScheduledEvent", () => {
 			SCHEDULER_QUEUE: mockQueue,
 		});
 
-		const [updated] = await db
+		// Should be enqueued
+		expect(sentMessages.length).toBe(1);
+
+		// Should still be enabled (not disabled at enqueue time)
+		const [after] = await db
 			.select()
 			.from(scheduledJobs)
 			.where(eq(scheduledJobs.id, jobId));
-
-		expect(updated).toBeDefined();
-		// biome-ignore lint/style/noNonNullAssertion: asserted above
-		expect(updated!.enabled).toBe(0);
+		expect(after?.enabled).toBe(1);
+		// nextRunAt should be unchanged (not recalculated)
+		expect(after?.nextRunAt).toBe(before?.nextRunAt);
 	});
 
 	it("recalculates nextRunAt for recurring jobs (not runOnce)", async () => {
@@ -175,5 +188,38 @@ describe("handleScheduledEvent", () => {
 		});
 
 		expect(sendBatchCalled).toBe(false);
+	});
+});
+
+describe("disableRunOnceJob", () => {
+	beforeEach(async () => {
+		const db = getDb();
+		await db.delete(scheduledJobs);
+	});
+
+	it("disables a runOnce job", async () => {
+		const db = getDb();
+		const jobId = await insertJob(db, { runOnce: 1 });
+
+		await disableRunOnceJob(db, jobId);
+
+		const [updated] = await db
+			.select()
+			.from(scheduledJobs)
+			.where(eq(scheduledJobs.id, jobId));
+		expect(updated?.enabled).toBe(0);
+	});
+
+	it("does not disable a recurring job", async () => {
+		const db = getDb();
+		const jobId = await insertJob(db, { runOnce: 0 });
+
+		await disableRunOnceJob(db, jobId);
+
+		const [updated] = await db
+			.select()
+			.from(scheduledJobs)
+			.where(eq(scheduledJobs.id, jobId));
+		expect(updated?.enabled).toBe(1);
 	});
 });
