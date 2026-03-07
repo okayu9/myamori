@@ -111,6 +111,10 @@ describe("handleScheduledEvent", () => {
 	it("disables runOnce job before enqueueing", async () => {
 		const db = getDb();
 		const jobId = await insertJob(db, { runOnce: 1 });
+		const [before] = await db
+			.select()
+			.from(scheduledJobs)
+			.where(eq(scheduledJobs.id, jobId));
 
 		const sentMessages: unknown[] = [];
 		const mockQueue = {
@@ -133,6 +137,8 @@ describe("handleScheduledEvent", () => {
 			.from(scheduledJobs)
 			.where(eq(scheduledJobs.id, jobId));
 		expect(after?.enabled).toBe(0);
+		// nextRunAt should be unchanged (not recalculated)
+		expect(after?.nextRunAt).toBe(before?.nextRunAt);
 	});
 
 	it("recalculates nextRunAt for recurring jobs (not runOnce)", async () => {
