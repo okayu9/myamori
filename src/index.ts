@@ -312,7 +312,14 @@ export default {
 					},
 				});
 				const db = createDb(env.DB);
-				await disableRunOnceJob(db, jobId);
+				try {
+					await disableRunOnceJob(db, jobId);
+				} catch (disableError) {
+					console.error(
+						`Failed to disable runOnce job ${jobId}, may re-execute:`,
+						disableError,
+					);
+				}
 				msg.ack();
 			} catch (error) {
 				console.error(
