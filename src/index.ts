@@ -34,6 +34,7 @@ type Bindings = {
 	RATE_LIMIT_KV: KVNamespace;
 	VECTORIZE?: VectorizeIndex;
 	AI?: Ai;
+	SANDBOX?: DurableObjectNamespace;
 };
 
 const app = new Hono<{ Bindings: Bindings }>();

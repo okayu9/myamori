@@ -15,6 +15,7 @@ export interface ToolRegistryEnv {
 	CALDAV_USERNAME?: string;
 	CALDAV_PASSWORD?: string;
 	CALDAV_CALENDAR_NAME?: string;
+	SANDBOX?: DurableObjectNamespace;
 }
 
 export async function buildToolRegistry(
@@ -72,6 +73,11 @@ export async function buildToolRegistry(
 		for (const tool of createSchedulerTools(db, chatId, threadId)) {
 			registry.register(tool);
 		}
+	}
+
+	if (env.SANDBOX && chatId) {
+		const { createSandboxTool } = await import("./sandbox");
+		registry.register(createSandboxTool(env.SANDBOX as never, chatId));
 	}
 
 	return registry;

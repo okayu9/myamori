@@ -45,6 +45,7 @@ export interface AgentWorkflowEnv {
 	SCHEDULER_QUEUE?: Queue;
 	VECTORIZE?: VectorizeIndex;
 	AI?: Ai;
+	SANDBOX?: DurableObjectNamespace;
 }
 
 export class AgentWorkflow extends WorkflowEntrypoint<
