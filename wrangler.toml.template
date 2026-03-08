@@ -89,3 +89,15 @@ index_name = "${STAGING_VECTORIZE_INDEX_NAME}"
 queue = "${STAGING_QUEUE_NAME}"
 max_batch_size = 10
 max_retries = 3
+
+[[env.staging.containers]]
+class_name = "Sandbox"
+image = "./Dockerfile"
+
+[[env.staging.durable_objects.bindings]]
+class_name = "Sandbox"
+name = "SANDBOX"
+
+[[env.staging.migrations]]
+new_sqlite_classes = ["Sandbox"]
+tag = "v1"
