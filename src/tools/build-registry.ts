@@ -1,3 +1,4 @@
+import type { Sandbox } from "@cloudflare/sandbox";
 import { createDb } from "../db";
 import { createCalendarTools } from "./calendar";
 import { createCalendarClient } from "./calendar-client";
@@ -77,7 +78,12 @@ export async function buildToolRegistry(
 
 	if (env.SANDBOX && chatId) {
 		const { createSandboxTool } = await import("./sandbox");
-		registry.register(createSandboxTool(env.SANDBOX as never, chatId));
+		registry.register(
+			createSandboxTool(
+				env.SANDBOX as unknown as DurableObjectNamespace<Sandbox>,
+				chatId,
+			),
+		);
 	}
 
 	return registry;

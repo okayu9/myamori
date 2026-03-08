@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@cloudflare/sandbox", () => ({
 	getSandbox: vi.fn(),
@@ -18,6 +18,10 @@ function createMockSandbox(runCodeResult: unknown) {
 }
 
 describe("sandbox tool", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
+
 	it("has correct metadata", () => {
 		const tool = createSandboxTool({} as never, "chat-1");
 		expect(tool.name).toBe("execute_code");
@@ -67,7 +71,7 @@ describe("sandbox tool", () => {
 		expect(result.error).toBe("ZeroDivisionError: division by zero");
 	});
 
-	it("uses chatId-scoped sandbox instance", async () => {
+	it("uses chatId-scoped sandbox instance", () => {
 		const mockSandbox = createMockSandbox({
 			results: [],
 			logs: { stdout: [], stderr: [] },
@@ -76,9 +80,24 @@ describe("sandbox tool", () => {
 		mockGetSandbox.mockReturnValue(mockSandbox as never);
 
 		const ns = {} as never;
-		const tool = createSandboxTool(ns, "chat-42");
-		await tool.execute({ language: "javascript", code: "1+1" });
+		createSandboxTool(ns, "chat-42");
 
 		expect(mockGetSandbox).toHaveBeenCalledWith(ns, "sandbox-chat-42");
+	});
+
+	it("reuses code context across executions", async () => {
+		const mockSandbox = createMockSandbox({
+			results: [],
+			logs: { stdout: [], stderr: [] },
+			error: null,
+		});
+		mockGetSandbox.mockReturnValue(mockSandbox as never);
+
+		const tool = createSandboxTool({} as never, "chat-1");
+		await tool.execute({ language: "python", code: "x = 1" });
+		await tool.execute({ language: "python", code: "print(x)" });
+
+		expect(mockSandbox.createCodeContext).toHaveBeenCalledTimes(1);
+		expect(mockSandbox.runCode).toHaveBeenCalledTimes(2);
 	});
 });

@@ -1,4 +1,8 @@
-import { getSandbox, type Sandbox } from "@cloudflare/sandbox";
+import {
+	type CodeContext,
+	getSandbox,
+	type Sandbox,
+} from "@cloudflare/sandbox";
 import { z } from "zod";
 import type { ToolDefinition } from "./types";
 import { defineTool } from "./types";
@@ -7,6 +11,9 @@ export function createSandboxTool(
 	sandboxNamespace: DurableObjectNamespace<Sandbox>,
 	chatId: string,
 ): ToolDefinition {
+	const sandbox = getSandbox(sandboxNamespace, `sandbox-${chatId}`);
+	const contexts = new Map<string, CodeContext>();
+
 	return defineTool({
 		name: "execute_code",
 		description:
@@ -20,10 +27,13 @@ export function createSandboxTool(
 		}),
 		riskLevel: "low",
 		execute: async (input) => {
-			const sandbox = getSandbox(sandboxNamespace, `sandbox-${chatId}`);
-			const context = await sandbox.createCodeContext({
-				language: input.language,
-			});
+			let context = contexts.get(input.language);
+			if (!context) {
+				context = await sandbox.createCodeContext({
+					language: input.language,
+				});
+				contexts.set(input.language, context);
+			}
 			const result = await sandbox.runCode(input.code, { context });
 
 			if (result.error) {

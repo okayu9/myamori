@@ -1,7 +1,1 @@
-FROM docker.io/cloudflare/sandbox:latest
-
-RUN pip3 install --no-cache-dir \
-    numpy \
-    pandas \
-    matplotlib \
-    scipy
+FROM docker.io/cloudflare/sandbox:0.7.13-python
