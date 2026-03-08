@@ -189,7 +189,7 @@ export class AgentWorkflow extends WorkflowEntrypoint<
 						durationMs: Date.now() - llmStart,
 					});
 
-					return result.text;
+					return result.text || "(No response text was generated.)";
 				},
 			);
 		} catch {
