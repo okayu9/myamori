@@ -1,5 +1,5 @@
 name = "myamori"
-main = "src/index.ts"
+main = "src/entry.ts"
 compatibility_date = "2025-01-01"
 compatibility_flags = ["nodejs_compat"]
 
@@ -45,6 +45,18 @@ queue = "${QUEUE_NAME}"
 max_batch_size = 10
 max_retries = 3
 
+[[containers]]
+class_name = "Sandbox"
+image = "./Dockerfile"
+
+[[durable_objects.bindings]]
+class_name = "Sandbox"
+name = "SANDBOX"
+
+[[migrations]]
+new_sqlite_classes = ["Sandbox"]
+tag = "v1"
+
 [triggers]
 crons = ["*/5 * * * *"]
 
@@ -77,3 +89,15 @@ index_name = "${STAGING_VECTORIZE_INDEX_NAME}"
 queue = "${STAGING_QUEUE_NAME}"
 max_batch_size = 10
 max_retries = 3
+
+[[env.staging.containers]]
+class_name = "Sandbox"
+image = "./Dockerfile"
+
+[[env.staging.durable_objects.bindings]]
+class_name = "Sandbox"
+name = "SANDBOX"
+
+[[env.staging.migrations]]
+new_sqlite_classes = ["Sandbox"]
+tag = "v1"
