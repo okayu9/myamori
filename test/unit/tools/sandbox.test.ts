@@ -19,10 +19,7 @@ function createMockSandbox(runCodeResult: unknown) {
 
 describe("sandbox tool", () => {
 	it("has correct metadata", () => {
-		const tool = createSandboxTool(
-			{} as DurableObjectNamespace,
-			"chat-1",
-		);
+		const tool = createSandboxTool({} as never, "chat-1");
 		expect(tool.name).toBe("execute_code");
 		expect(tool.riskLevel).toBe("low");
 	});
@@ -35,10 +32,7 @@ describe("sandbox tool", () => {
 		});
 		mockGetSandbox.mockReturnValue(mockSandbox as never);
 
-		const tool = createSandboxTool(
-			{} as DurableObjectNamespace,
-			"chat-1",
-		);
+		const tool = createSandboxTool({} as never, "chat-1");
 		const result = (await tool.execute({
 			language: "python",
 			code: "print(6 * 7)",
@@ -63,10 +57,7 @@ describe("sandbox tool", () => {
 		});
 		mockGetSandbox.mockReturnValue(mockSandbox as never);
 
-		const tool = createSandboxTool(
-			{} as DurableObjectNamespace,
-			"chat-1",
-		);
+		const tool = createSandboxTool({} as never, "chat-1");
 		const result = (await tool.execute({
 			language: "python",
 			code: "1/0",
@@ -84,7 +75,7 @@ describe("sandbox tool", () => {
 		});
 		mockGetSandbox.mockReturnValue(mockSandbox as never);
 
-		const ns = {} as DurableObjectNamespace;
+		const ns = {} as never;
 		const tool = createSandboxTool(ns, "chat-42");
 		await tool.execute({ language: "javascript", code: "1+1" });
 
